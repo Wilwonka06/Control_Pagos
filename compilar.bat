@@ -1,10 +1,11 @@
 @echo off
 REM =====================================================
-REM SCRIPT DE COMPILACION - CONTROL DE PAGOS GCO
+REM SCRIPT DE COMPILACION - CONTROL DE PAGOS GCO v1.2
 REM =====================================================
 echo.
 echo ========================================
 echo   COMPILADOR DE CONTROL DE PAGOS GCO
+echo   VERSION 1.2
 echo ========================================
 echo.
 
@@ -28,6 +29,7 @@ REM Limpiar compilaciones anteriores
 echo [2/5] Limpiando archivos temporales...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
+if exist ControlPagosGCO.spec del /q ControlPagosGCO.spec
 echo OK: Archivos temporales eliminados.
 echo.
 
@@ -62,7 +64,7 @@ pyinstaller --onefile %modo% ^
     --hidden-import=openpyxl ^
     --hidden-import=pandas ^
     --hidden-import=tkcalendar ^
-    control_pagos_1_1.py
+    control_pagos_1_2.py
 
 if errorlevel 1 (
     echo.
@@ -74,11 +76,17 @@ if errorlevel 1 (
 
 echo.
 echo ========================================
-echo   COMPILACION EXITOSA
+echo   COMPILACION EXITOSA - VERSION 1.2
 echo ========================================
 echo.
 echo El ejecutable se encuentra en:
 echo %cd%\dist\ControlPagosGCO.exe
+echo.
+echo CAMBIOS EN VERSION 1.2:
+echo - Selector de proceso (3 opciones)
+echo - Validacion de archivo existente
+echo - Mensajes personalizados
+echo - Interfaz mejorada
 echo.
 echo [5/5] Abriendo carpeta de destino...
 explorer dist

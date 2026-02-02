@@ -488,14 +488,17 @@ class CopiarArchivo:
 
         # Si no hay config, usar rutas por defecto
         if not rutas_configuradas:
-            base_path = Path.home() / "Este equipo" / "O:"
+            # Definir la ruta base correctamente como un objeto Path
+            base_path = Path("T:/CONTROL DE PAGOS")
             
             if not base_path.exists():
-                 base_path_alt = Path.home() / "Este equipo" / "O:"
+                 # Intentar ruta alternativa si la principal no existe
+                 # Nota: Aquí tenías la misma ruta repetida. Si tienes una alternativa, cámbiala aquí.
+                 base_path_alt = Path("C:/CONTROL DE PAGOS") # Ejemplo de ruta alternativa
                  if base_path_alt.exists():
                      base_path = base_path_alt
                  else:
-                    Print("No se encontró la ruta por defecto")
+                    print("No se encontró la ruta por defecto")
             
             self.ruta_origen = base_path / "00.CONTROL DE PAGOS 2026 1.xlsm"
             self.ruta_intermedio = base_path / "Finanzas" / "Info Bancos" / "Pagos Internacionales" / "PROYECCION PAGOS SEMANAL Y MENSUAL"

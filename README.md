@@ -1,72 +1,271 @@
-# Automatización de Control de Pagos - Importaciones
+# Control de Pagos GCO - Versión 1.2
 
-Este proyecto automatiza el flujo de trabajo para la gestión y proyección de pagos de importaciones. Permite generar archivos de proyección semanal y actualizar automáticamente el archivo maestro de control de pagos, asegurando la integridad de los datos y el formato.
+## 📋 Descripción
 
-## 🚀 Funcionalidades Principales
+Sistema automatizado para la gestión de proyecciones de pagos y actualización del archivo de control de pagos final.
 
-1.  **Interfaz Gráfica Intuitiva**:
-    *   Selección de fecha mediante calendario interactivo.
-    *   Cálculo automático del próximo miércoles (día habitual de proyección).
+## 🆕 Nuevas Funcionalidades (v1.2)
 
-2.  **Generación de Proyección Semanal**:
-    *   Copia el archivo base `CONTROL PAGOS.xlsx` (origen).
-    *   Filtra los registros cuya `FECHA DE VENCIMIENTO` (o Pago) coincida con la fecha seleccionada y tengan estado 'PAGAR'.
-    *   Genera un nuevo archivo Excel con el nombre de la fecha (ej. `04 FEBRERO 2026.xlsx`) en la carpeta correspondiente al año y mes.
-    *   Crea una segunda hoja con los datos agrupados por Importador y Proveedor, calculando totales.
-    *   **Preservación de Formato**: Utiliza automatización nativa de Excel (COM) para mantener imágenes, estilos y macros del archivo original.
+### Opciones de Proceso Independientes
 
-3.  **Actualización del Archivo Maestro**:
-    *   Anexa los registros detallados al archivo final `CONTROL PAGOS.xlsx` (destino).
-    *   **Expansión Automática de Tabla**: Detecta la tabla de Excel existente y redimensiona el rango automáticamente para incluir los nuevos registros, manteniendo fórmulas y formatos condicionales.
+El sistema ahora permite al usuario elegir qué proceso desea ejecutar:
 
-4.  **Validaciones y Seguridad**:
-    *   Detección de archivos bloqueados/abiertos con sistema de reintento y alertas al usuario.
-    *   Validación de columnas requeridas y limpieza de nombres.
+#### **Opción 1: Crear Solo Proyección Semanal** 📊
+- Genera únicamente el archivo de proyección para la semana seleccionada
+- No modifica el archivo de control de pagos final
+- Ideal para:
+  - Revisar la proyección antes de confirmarla
+  - Generar reportes preliminares
+  - Análisis de datos sin compromiso
 
-## 📋 Requisitos del Sistema
+**Proceso:**
+1. Copia el archivo base de Control de Pagos
+2. Filtra los registros por la fecha seleccionada
+3. Crea la hoja de proyección con formato y agrupaciones
+4. Guarda el archivo en la carpeta correspondiente
 
-*   **Sistema Operativo**: Windows (Requerido para la automatización COM de Excel).
-*   **Software**: Microsoft Excel instalado.
-*   **Python**: 3.8 o superior.
+#### **Opción 2: Anexar Solo a Control Pagos Final** 📝
+- Lee un archivo de proyección existente
+- Anexa los registros al archivo final de control de pagos
+- **Validación importante:** Verifica que exista el archivo de proyección antes de proceder
+- Ideal para:
+  - Confirmar una proyección previamente revisada
+  - Separar la generación de la proyección de su aprobación
+  - Flujo de trabajo con múltiples revisiones
 
-## 🛠️ Instalación y Configuración
+**Proceso:**
+1. Busca el archivo de proyección para la fecha seleccionada
+2. Si no existe, muestra un mensaje de error con la ruta esperada
+3. Si existe, lee los datos de la hoja de proyección
+4. Filtra y limpia los datos (elimina filas vacías y totales)
+5. Anexa los registros al archivo final
 
-1.  **Clonar o descargar el repositorio**.
+**Ubicación del archivo de proyección:**
+```
+O:\Finanzas\Info Bancos\Pagos Internacionales\PROYECCION PAGOS SEMANAL Y MENSUAL\
+  └── AÑO 2026\
+      └── FEBRERO\
+          └── 05 FEBRERO 2026.xlsx
+```
 
-2.  **Crear un entorno virtual** (recomendado):
-    ```bash
-    python -m venv venv
-    .\venv\Scripts\activate
-    ```
+#### **Opción 3: Ejecutar Proceso Completo** ⚙️
+- Combina las opciones 1 y 2
+- Crea la proyección Y anexa al archivo final
+- Comportamiento original del sistema
+- Ideal para:
+  - Proceso rutinario sin necesidad de revisión previa
+  - Cuando se tiene confianza en los datos
 
-3.  **Instalar dependencias**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *Nota: `pywin32` es crucial para la interacción con Excel.*
+## 🎯 Casos de Uso
 
-## ▶️ Uso
+### Caso 1: Flujo de Trabajo con Revisión
+```
+1. Miércoles (Usuario A): 
+   - Selecciona Opción 1
+   - Genera proyección para revisión
 
-1.  Asegúrese de que el archivo origen `CONTROL PAGOS.xlsx` esté actualizado y cerrado (o guardado).
-2.  Ejecute el script principal:
-    ```bash
-    python control_pagos_1_1.py
-    ```
-3.  En la ventana emergente, seleccione la fecha para la proyección (por defecto sugiere el próximo miércoles).
-4.  Haga clic en **"EJECUTAR PROCESO"**.
-5.  El sistema:
-    *   Creará la carpeta del mes si no existe.
-    *   Generará el archivo de proyección.
-    *   Actualizará el archivo maestro.
-    *   Mostrará mensajes de confirmación o alerta en caso de errores (ej. archivo abierto).
+2. Miércoles (Usuario B):
+   - Revisa el archivo de proyección
+   - Aprueba o solicita cambios
 
-## 📂 Estructura del Proyecto
+3. Jueves (Usuario A):
+   - Selecciona Opción 2
+   - Anexa los datos al archivo final
+```
 
-*   `control_pagos_1_1.py`: Script principal con toda la lógica de negocio e interfaz gráfica.
-*   `requirements.txt`: Lista de librerías Python necesarias.
-*   `README.md`: Documentación del proyecto.
+### Caso 2: Proceso Rápido
+```
+1. Miércoles:
+   - Selecciona Opción 3
+   - Proceso completo automático
+```
 
-## ⚠️ Notas Importantes
+### Caso 3: Regeneración de Proyección
+```
+1. Se detecta un error en la proyección generada
+2. Se corrige el archivo base
+3. Se vuelve a ejecutar Opción 1
+4. Se revisa la nueva proyección
+5. Se ejecuta Opción 2 para anexar
+```
 
-*   **Rutas de Archivos**: Las rutas a los archivos de origen y destino están configuradas en el código (`control_pagos_1_1.py`). Asegúrese de que correspondan a su estructura de carpetas local o OneDrive.
-*   **Excel Interactivo**: El script abre instancias de Excel en segundo plano. Evite interactuar con otras ventanas de Excel mientras el proceso se ejecuta para prevenir conflictos.
+## 🖥️ Interfaz de Usuario
+
+La nueva interfaz incluye:
+
+- **Selector de Proceso**: Tres opciones claramente diferenciadas con:
+  - Iconos visuales (emojis)
+  - Descripción de cada opción
+  - Código de colores para identificación rápida
+  
+- **Selector de Fecha**: Calendario interactivo con:
+  - Sugerencia automática del próximo miércoles
+  - Indicador visual cuando se selecciona un miércoles
+  - Validación de fecha
+
+- **Mensajes de Confirmación**: Adaptados según la opción seleccionada
+
+## ⚠️ Validaciones y Advertencias
+
+### Opción 2 - Verificación de Archivo Existente
+
+Cuando se selecciona la Opción 2, el sistema:
+
+1. **Busca el archivo de proyección** en la ubicación esperada
+2. **Si no existe:**
+   - Muestra un mensaje de error detallado
+   - Indica la ruta exacta donde debería estar el archivo
+   - Sugiere usar Opción 1 o Opción 3
+3. **Si existe:**
+   - Lee la hoja de proyección correspondiente
+   - Limpia los datos (elimina filas vacías y de totales)
+   - Procede con el anexado
+
+### Ejemplo de Mensaje de Error
+
+```
+Archivo No Encontrado
+
+No se encontró el archivo de proyección para:
+05/02/2026
+
+Ruta esperada:
+O:\Finanzas\Info Bancos\Pagos Internacionales\
+PROYECCION PAGOS SEMANAL Y MENSUAL\AÑO 2026\FEBRERO\
+05 FEBRERO 2026.xlsx
+
+Por favor, primero cree la proyección (Opción 1) 
+o ejecute el proceso completo (Opción 3).
+```
+
+## 📁 Estructura de Archivos
+
+```
+Control de Pagos/
+│
+├── control_pagos_1_2.py          # Archivo principal (nuevo)
+├── control_pagos_1_1.py          # Versión anterior
+├── compilar.bat                   # Script de compilación
+├── config.ini                     # Configuración de rutas (opcional)
+├── icon.ico                       # Icono de la aplicación
+└── requirements.txt               # Dependencias Python
+```
+
+## 🔧 Configuración
+
+### config.ini (Opcional)
+
+```ini
+[RUTAS]
+ArchivoOrigen = O:\00.CONTROL DE PAGOS 2026 1.xlsm
+CarpetaIntermedia = O:\Finanzas\Info Bancos\Pagos Internacionales\PROYECCION PAGOS SEMANAL Y MENSUAL
+ArchivoFinal = O:\Finanzas\Info Bancos\Pagos Internacionales\CONTROL PAGOS.xlsx
+```
+
+## 🚀 Instalación y Uso
+
+### Modo Desarrollo
+```bash
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Ejecutar
+python control_pagos_1_2.py
+```
+
+### Compilar Ejecutable
+```bash
+# Ejecutar el script de compilación
+compilar.bat
+
+# Seleccionar opción:
+# 1 - Con consola (para debugging)
+# 2 - Sin consola (versión final)
+```
+
+## 📊 Flujo de Datos
+
+### Opción 1: Solo Proyección
+```
+[Archivo Base] 
+    ↓
+[Copia y Limpia]
+    ↓
+[Filtra por Fecha]
+    ↓
+[Agrupa y Formatea]
+    ↓
+[Proyección Semanal.xlsx] ✓
+```
+
+### Opción 2: Solo Anexar
+```
+[Proyección Existente.xlsx] ✓
+    ↓
+[Lee y Limpia Datos]
+    ↓
+[Prepara Formato Final]
+    ↓
+[Anexa a Control Final.xlsx] ✓
+```
+
+### Opción 3: Proceso Completo
+```
+[Archivo Base]
+    ↓
+[Opción 1: Crea Proyección] ✓
+    ↓
+[Opción 2: Anexa a Final] ✓
+```
+
+## 🐛 Solución de Problemas
+
+### Error: "No se encuentra el archivo de proyección"
+**Solución:** 
+- Verificar que la fecha seleccionada es correcta
+- Asegurarse de haber ejecutado primero la Opción 1
+- Verificar la estructura de carpetas
+
+### Error: "Archivo está abierto"
+**Solución:**
+- Cerrar todos los archivos Excel relacionados
+- Intentar nuevamente
+
+### Error: "No se encontraron registros"
+**Solución:**
+- Verificar que existan registros para la semana seleccionada
+- Revisar que los registros tengan el estado "PAGAR"
+- Verificar las fechas de vencimiento
+
+## 📝 Registro de Cambios
+
+### Versión 1.2 (Actual)
+-  Añadido selector de proceso (3 opciones)
+-  Implementada validación de archivo existente para Opción 2
+-  Mejorada interfaz de usuario con secciones visuales
+-  Añadidos mensajes de confirmación personalizados
+-  Mejorada limpieza de datos al leer proyecciones existentes
+
+### Versión 1.1
+- Corrección de problemas con hojas ocultas
+- Mejora en el manejo de columnas
+- Interfaz gráfica moderna
+
+### Versión 1.0
+- Versión inicial
+- Proceso automatizado completo
+
+## 👥 Créditos
+
+Desarrollado para GCO - Gestión de Control de Pagos
+
+## 📄 Licencia
+
+Uso interno - GCO
+
+## Contacto - Autor
+
+Para cualquier pregunta, sugerencia o problema, por favor abra un issue en este repositorio o contacte al autor directamente.
+* correo: rojaswil336@gmail.com
+* telefono: 3207199395
+
