@@ -29,6 +29,20 @@ except locale.Error:
     except locale.Error:
         pass
 
+def obtener_ruta_recurso(nombre_archivo: str) -> Path:
+    base_dir = getattr(sys, "_MEIPASS", None)
+    if base_dir:
+        return Path(base_dir) / nombre_archivo
+    return Path(__file__).resolve().parent / nombre_archivo
+
+def aplicar_icono_ventana(ventana: tk.Tk) -> None:
+    try:
+        icon_path = obtener_ruta_recurso("icon.ico")
+        if icon_path.exists():
+            ventana.iconbitmap(str(icon_path))
+    except Exception:
+        pass
+
 class ConfiguradorRutas:
     """Manejador de configuración de rutas"""
     
@@ -47,6 +61,7 @@ class ConfiguradorRutas:
     def crear_configuracion_inicial(self):
         """Crea configuración inicial solicitando rutas al usuario"""
         root = tk.Tk()
+        aplicar_icono_ventana(root)
         root.withdraw()
         
         messagebox.showinfo(
@@ -130,6 +145,7 @@ class InterfazModerna:
     def crear_ventana(self):
         """Crea la ventana de interfaz moderna"""
         self.root = tk.Tk()
+        aplicar_icono_ventana(self.root)
         self.root.title("Control de Pagos GCO")
         self.root.geometry("700x600")
         self.root.resizable(False, False)
@@ -381,8 +397,9 @@ class VentanaProgreso:
     
     def __init__(self):
         self.root = tk.Tk()
+        aplicar_icono_ventana(self.root)
         self.root.title("Procesando...")
-        self.root.geometry("600x400")
+        self.root.geometry("600x300")
         self.root.resizable(False, False)
         self.root.configure(bg="#ECF0F1")
         
@@ -401,26 +418,6 @@ class VentanaProgreso:
             fg="#2C3E50"
         )
         titulo.pack(pady=(0, 20))
-        
-        # Área de log
-        log_frame = tk.Frame(main_frame, bg="white", relief=tk.SUNKEN, borderwidth=2)
-        log_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(log_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Text widget
-        self.log_text = tk.Text(
-            log_frame,
-            font=("Consolas", 9),
-            bg="white",
-            fg="#2C3E50",
-            yscrollcommand=scrollbar.set,
-            wrap=tk.WORD
-        )
-        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        scrollbar.config(command=self.log_text.yview)
         
         # Barra de progreso
         self.progress = ttk.Progressbar(
@@ -455,14 +452,6 @@ class VentanaProgreso:
         
         color = colores.get(tipo, "#2C3E50")
         
-        self.log_text.insert(tk.END, f"[{timestamp}] ", "timestamp")
-        self.log_text.insert(tk.END, f"[{tipo}] ", tipo)
-        self.log_text.insert(tk.END, f"{mensaje}\n")
-        
-        self.log_text.tag_config("timestamp", foreground="#95A5A6")
-        self.log_text.tag_config(tipo, foreground=color, font=("Consolas", 9, "bold"))
-        
-        self.log_text.see(tk.END)
         self.root.update()
     
     def cerrar(self):
@@ -1394,11 +1383,11 @@ def main():
         
         # Confirmar ejecución
         if not messagebox.askyesno(
-            "Confirmar Ejecución",
+            "          -------------          Confirmar Ejecución          ------------- \n\n",
             "Antes de continuar, asegúrese de:\n\n"
-            "✓ Haber actualizado el archivo 'CONTROL DE PAGOS.xlsm'\n"
-            "✓ Haber guardado todos los cambios\n"
-            "✓ Cerrar el archivo si está abierto\n\n"
+            "   ✓ Haber actualizado el archivo 'CONTROL DE PAGOS.xlsm'\n"
+            "   ✓ Haber guardado todos los cambios\n"
+            "   ✓ Cerrar el archivo si está abierto\n\n"
             "¿Desea continuar?"
         ):
             return
@@ -1444,6 +1433,7 @@ if __name__ == "__main__":
         
         try:
             root = tk.Tk()
+            aplicar_icono_ventana(root)
             root.withdraw()
             messagebox.showerror("Error Fatal", f"Ocurrió un error crítico:\n\n{str(e)}\n\nConsulte CRASH_LOG.txt")
         except:
