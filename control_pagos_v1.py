@@ -18,7 +18,9 @@ from tkcalendar import DateEntry
 import configparser
 import sys
 import time
+import logging
 import traceback
+import stat
 
 # Configuración de español
 try:
@@ -28,6 +30,22 @@ except locale.Error:
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # Linux
     except locale.Error:
         pass
+
+# Configurar logging detallado
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s',
+    handlers=[
+        logging.FileHandler('control_pagos_debug.log', encoding='utf-8', mode='w'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+logger.info("="*80)
+logger.info("INICIANDO APLICACIÓN CONTROL DE PAGOS")
+logger.info("="*80)
 
 def obtener_ruta_recurso(nombre_archivo: str) -> Path:
     base_dir = getattr(sys, "_MEIPASS", None)
@@ -70,7 +88,7 @@ class ConfiguradorRutas:
         )
         
         # Solicitar archivo origen
-        messagebox.showinfo("Paso 1", "Seleccione el archivo CONTROL DE PAGOS.xlsm")
+        messagebox.showinfo("Paso 1", "Seleccione el archivo CONTROL DE PAGOS de comercio")
         archivo_origen = filedialog.askopenfilename(
             title="Seleccionar CONTROL DE PAGOS.xlsm",
             filetypes=[("Excel Macro", "*.xlsm"), ("Todos", "*.*")]
@@ -81,7 +99,7 @@ class ConfiguradorRutas:
             return False
         
         # Solicitar carpeta de proyecciones
-        messagebox.showinfo("Paso 2", "Seleccione la carpeta donde se guardarán las PROYECCIONES")
+        messagebox.showinfo("Paso 2", "Seleccione la carpeta donde se guardarán las PROYECCIONES\n(PROYECCION PAGOS SEMANAL Y MENSUAL)")
         carpeta_proyecciones = filedialog.askdirectory(
             title="Seleccionar carpeta de PROYECCIONES"
         )
@@ -91,7 +109,7 @@ class ConfiguradorRutas:
             return False
         
         # Solicitar archivo final
-        messagebox.showinfo("Paso 3", "Seleccione el archivo CONTROL PAGOS.xlsx (archivo final)")
+        messagebox.showinfo("Paso 3", "Seleccione el archivo CONTROL PAGOS.xlsx - archivo final \n(En Pagos Internacionales)")
         archivo_final = filedialog.askopenfilename(
             title="Seleccionar CONTROL PAGOS.xlsx",
             filetypes=[("Excel", "*.xlsx"), ("Todos", "*.*")],
@@ -498,7 +516,6 @@ class CopiarArchivo:
         # Calcular número de semana del mes
         primer_dia_mes = fecha.replace(day=1)
         dias_transcurridos = (fecha - primer_dia_mes).days
-        semana = (dias_transcurridos // 7) + 1
         
         carpeta_destino = self.carpeta_proyecciones / f"AÑO {año}" / mes
         carpeta_destino.mkdir(parents=True, exist_ok=True)
@@ -576,10 +593,22 @@ class CopiarArchivo:
             # Cerrar el archivo original
             wb.Close(SaveChanges=False)
             wb = None
+            try:
+                ruta_dest_path = Path(ruta_dest_str)
+                ruta_dest_path.chmod(ruta_dest_path.stat().st_mode | stat.S_IWRITE)
+                self.log("Permisos de escritura habilitados en el archivo creado.", "OK")
+            except Exception as e:
+                self.log(f"No se pudieron ajustar permisos de escritura: {e}", "WARN")
             
             # ABRIR EL NUEVO ARCHIVO para limpiar hojas
             self.log("Abriendo archivo nuevo para limpieza...", "INFO")
-            wb = excel.Workbooks.Open(ruta_dest_str)
+            wb = excel.Workbooks.Open(
+                ruta_dest_str,
+                ReadOnly=False,
+                UpdateLinks=0,
+                IgnoreReadOnlyRecommended=True,
+                Notify=False
+            )
             
             # Identificar hoja de Control de Pagos
             hoja_control = None
@@ -963,7 +992,13 @@ class CopiarArchivo:
             # Intentar abrir el archivo con reintentos por si está bloqueado
             for i in range(3):
                 try:
-                    wb = excel.Workbooks.Open(str(ruta_archivo.absolute()))
+                    wb = excel.Workbooks.Open(
+                        str(ruta_archivo.absolute()),
+                        ReadOnly=False,
+                        UpdateLinks=0,
+                        IgnoreReadOnlyRecommended=True,
+                        Notify=False
+                    )
                     break
                 except Exception as e:
                     if i == 2: raise e
