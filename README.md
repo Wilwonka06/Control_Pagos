@@ -1,4 +1,15 @@
-# Control de Pagos GCO - Versión 1.0
+# Control de Pagos GCO - Versión 1.3.1
+
+## 📝 Historial de Actualizaciones
+
+### Versión 1.3.1 (Actual)
+- **Corrección Crítica COM**: Solucionado conflicto con librería `win32com` reemplazando llamadas a `win32com.client.DispatchEx` por `win32com.DispatchEx` para mayor compatibilidad.
+- **Limpieza de Consola**: Implementado sistema de filtrado de `stderr` para ocultar advertencias internas de compatibilidad de Pandas/Dateutil ("AttributeError: 'NoneType' object has no attribute 'total_seconds'") que no afectan la ejecución.
+- **Estabilidad**: Corregido error de inicialización en la clase `CopiarArchivo` donde el logger intentaba escribir antes de que la ventana de progreso estuviera lista.
+
+### Versión 1.2.1
+- Mejora en la interfaz gráfica y validaciones de rutas.
+- Inclusión de archivo de configuración `config_pagos.ini`.
 
 ## 📋 Descripción
 

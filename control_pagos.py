@@ -1,14 +1,3 @@
-"""
-AUTOMATIZACIÓN COMPLETA - CONTROL DE PAGOS - VERSIÓN 1.0
-"""
-
-from enum import nonmember
-import pandas as pd
-import win32com.client
-import pythoncom
-from openpyxl import load_workbook
-from openpyxl.styles import Font, Alignment, Border, Side
-from openpyxl.utils.dataframe import dataframe_to_rows
 from pathlib import Path
 from datetime import datetime, timedelta
 import locale
@@ -22,6 +11,65 @@ import logging
 import traceback
 import stat
 
+# --- PATCH: Silenciar errores de compatibilidad de Pandas/Dateutil en consola ---
+class StderrFilter:
+    def __init__(self, original_stderr):
+        self.original_stderr = original_stderr
+        self.buffer = ""
+
+    def write(self, s):
+        self.buffer += s
+        # Procesamos si hay salto de línea o el buffer es muy grande
+        if "\n" in self.buffer or len(self.buffer) > 500:
+            self.process_buffer()
+
+    def flush(self):
+        if self.buffer:
+            self.process_buffer(force=True)
+        try:
+            self.original_stderr.flush()
+        except:
+            pass
+            
+    def process_buffer(self, force=False):
+        # Firmas del error que queremos silenciar
+        error_signatures = [
+            "pandas._libs.tslibs", 
+            "total_seconds", 
+            "_localize_tso",
+            "AttributeError: 'NoneType' object"
+        ]
+        
+        # Si el buffer contiene alguna firma, lo descartamos silenciosamente
+        if any(sig in self.buffer for sig in error_signatures):
+            self.buffer = ""
+            return
+
+        # Fragmentos que inician bloques de error (sospechosos de ser parte del error a silenciar)
+        suspicious_starts = [
+            "Exception ignored in:", 
+            "Traceback (most recent call last):", 
+            "AttributeError:"
+        ]
+        
+        # Si contiene un inicio sospechoso pero no confirmamos la firma aún...
+        is_suspicious = any(start in self.buffer for start in suspicious_starts)
+        
+        # Si es sospechoso, corto y no forzado, esperamos más datos (no imprimimos aún)
+        if is_suspicious and len(self.buffer) < 300 and not force:
+            return
+
+        # Si no es el error silenciado, imprimimos
+        try:
+            self.original_stderr.write(self.buffer)
+        except:
+            pass
+        finally:
+            self.buffer = ""
+
+# Aplicar el filtro a stderr
+sys.stderr = StderrFilter(sys.stderr)
+
 # Configuración de español
 try:
     locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # Windows
@@ -30,22 +78,6 @@ except locale.Error:
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # Linux
     except locale.Error:
         pass
-
-# Configurar logging detallado
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s',
-    handlers=[
-        logging.FileHandler('control_pagos_debug.log', encoding='utf-8', mode='w'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-
-logger.info("="*80)
-logger.info("INICIANDO APLICACIÓN CONTROL DE PAGOS")
-logger.info("="*80)
 
 def obtener_ruta_recurso(nombre_archivo: str) -> Path:
     base_dir = getattr(sys, "_MEIPASS", None)
@@ -63,7 +95,7 @@ def aplicar_icono_ventana(ventana: tk.Tk) -> None:
 
 class ConfiguradorRutas:
     """Manejador de configuración de rutas"""
-    
+
     def __init__(self):
         self.config_file = Path("config_pagos.ini")
         self.config = configparser.ConfigParser()
@@ -152,7 +184,6 @@ class InterfazModerna:
         self.fecha_seleccionada = None
         self.ejecutar_proceso = False
         
-        # Colores del tema
         self.COLOR_PRIMARIO = "#2C3E50"
         self.COLOR_SECUNDARIO = "#3498DB"
         self.COLOR_ACENTO = "#27AE60"
@@ -171,8 +202,6 @@ class InterfazModerna:
         
         # Centrar ventana
         self.centrar_ventana()
-        
-        # Configurar estilo
         self.configurar_estilos()
         
         # Frame principal
@@ -486,7 +515,18 @@ class CopiarArchivo:
     def __init__(self, fecha_filtrado, ventana_progreso, rutas_config):
         self.fecha_filtrado = fecha_filtrado
         self.ventana_progreso = ventana_progreso
+
+        self.log("Cargando motores de datos (Pandas/Excel)...", "INFO")
+        global pd, win32com, pythoncom, openpyxl, Font, Alignment, Border, Side, dataframe_to_rows, load_workbook
         
+        import pandas as pd
+        import win32com.client as win32com
+        import pythoncom
+        import openpyxl
+        from openpyxl import load_workbook
+        from openpyxl.styles import Font, Alignment, Border, Side
+        from openpyxl.utils.dataframe import dataframe_to_rows
+
         # Configurar rutas
         self.ruta_origen = rutas_config['origen']
         self.carpeta_proyecciones = rutas_config['proyecciones']
@@ -503,7 +543,6 @@ class CopiarArchivo:
         try:
             print(f"[{tipo}] {mensaje}")
         except UnicodeEncodeError:
-            # Si falla la codificación, intentamos imprimir reemplazando caracteres
             print(f"[{tipo}] {mensaje.encode('ascii', 'replace').decode('ascii')}")
     
     def crear_estructura_carpetas(self, fecha):
@@ -512,10 +551,6 @@ class CopiarArchivo:
         
         año = fecha.year
         mes = fecha.strftime('%B').upper()
-        
-        # Calcular número de semana del mes
-        primer_dia_mes = fecha.replace(day=1)
-        dias_transcurridos = (fecha - primer_dia_mes).days
         
         carpeta_destino = self.carpeta_proyecciones / f"AÑO {año}" / mes
         carpeta_destino.mkdir(parents=True, exist_ok=True)
@@ -541,9 +576,7 @@ class CopiarArchivo:
         return nombre
     
     def copiar_archivo_base(self, ruta_destino):
-        """
-        Copia archivo base a destino guardándolo como XLSX y eliminando hojas innecesarias.
-        """
+        """Copia archivo base a destino guardándolo como XLSX y eliminando hojas innecesarias."""
         self.log("Copiando archivo completo como .xlsx...", "INFO")
         
         excel = None
@@ -553,7 +586,7 @@ class CopiarArchivo:
             pythoncom.CoInitialize()
             
             # Crear instancia de Excel
-            excel = win32com.client.DispatchEx("Excel.Application")
+            excel = win32com.DispatchEx("Excel.Application")
             excel.Visible = False
             excel.DisplayAlerts = False
             excel.AutomationSecurity = 3  # Desactivar macros
@@ -562,13 +595,24 @@ class CopiarArchivo:
             self.log(f"Abriendo archivo: {self.ruta_origen.name}", "INFO")
             wb = excel.Workbooks.Open(
                 str(self.ruta_origen),
-                ReadOnly=True,
-                UpdateLinks=0,
+                ReadOnly=False,  # CAMBIO: Abrir en modo escritura para permitir actualización
+                UpdateLinks=3,   # CAMBIO: 3 = Actualizar todos los vínculos externos
                 IgnoreReadOnlyRecommended=True,
                 Notify=False
             )
             
-            # FORZAR visibilidad de todas las hojas ANTES de guardar
+            self.log("Actualizando vínculos y recalculando fórmulas...", "INFO")
+            try:
+                wb.RefreshAll()
+                
+                # Forzar recálculo de todas las fórmulas
+                excel.CalculateFull()
+                time.sleep(3)
+                
+                self.log("Datos actualizados correctamente", "OK")
+            except Exception as e:
+                self.log(f"Advertencia al actualizar: {e}", "WARN")
+
             self.log("Haciendo visibles todas las hojas...", "INFO")
             for sheet in wb.Sheets:
                 try:
@@ -618,15 +662,11 @@ class CopiarArchivo:
                     break
             
             if not hoja_control:
-                # Si no encuentra por nombre, intenta la primera visible
                 hoja_control = wb.Sheets(1)
                 self.log("No se identificó hoja por nombre, usando la primera hoja.", "WARN")
             
             nombre_hoja_control = hoja_control.Name
             self.log(f"Hoja objetivo identificada: '{nombre_hoja_control}'", "OK")
-            
-            # ELIMINAR todas las hojas EXCEPTO la que necesitamos
-            self.log("Eliminando hojas innecesarias...", "INFO")
             
             # Recolectar nombres primero para evitar problemas al iterar y borrar
             hojas_a_eliminar = []
@@ -679,7 +719,7 @@ class CopiarArchivo:
             wb = None
             
             try:
-                excel = win32com.client.DispatchEx("Excel.Application")
+                excel = win32com.DispatchEx("Excel.Application")
                 excel.Visible = False
                 excel.DisplayAlerts = False
                 
@@ -692,7 +732,6 @@ class CopiarArchivo:
                     raise Exception("No se pudo abrir el libro (objeto wb es None)")
                 
                 # Buscar hoja CONTROL DE PAGOS
-                # Como ya limpiamos, debería ser la primera
                 if wb.Sheets.Count == 0:
                     raise Exception("El libro no tiene hojas")
                     
@@ -748,11 +787,8 @@ class CopiarArchivo:
         df.columns = columnas_normalizadas
         
         self.log(f"Columnas disponibles: {df.columns.tolist()}", "INFO")
-        
-        # --- ESTRATEGIA DE FILTRADO ---
-        # 1. Primero filtrar por FECHA (FECHA DE VENCIMIENTO o FECHA DE PAGO)
-        # 2. Luego filtrar por ESTADO = "PAGAR"
-        
+
+        #filtrado
         df_procesado = df.copy()
         
         # PASO 1: Filtrar por FECHA
@@ -765,10 +801,7 @@ class CopiarArchivo:
         if col_fecha:
             self.log(f"Usando columna de fecha: '{col_fecha}'", "INFO")
             
-            # --- CORRECCIÓN FINAL: Limpieza EXTREMA antes de cualquier operación ---
-            # El error ocurría al intentar leer sample_vals ANTES de limpiar
-            # porque .dropna() o .head() intentan iterar sobre los objetos corruptos
-            
+            # --- Limpieza antes de cualquier operación ---
             try:
                 # 1. Convertir TODO a string primero
                 df_procesado[col_fecha] = df_procesado[col_fecha].astype(str)
@@ -855,8 +888,7 @@ class CopiarArchivo:
         
         df_resultado = pd.DataFrame()
         
-        # Mapeo de columnas
-        columnas_necesarias = {
+        columnas_df = {
             'IMPORTADOR': 'IMPORTADOR',
             'MARCA': 'MARCA',
             'PROVEEDOR': 'PROVEEDOR',
@@ -866,7 +898,7 @@ class CopiarArchivo:
             'NOTA CRÉDITO': 'VALOR NOTA CRÉDITO',
         }
         
-        for col_dest, col_origen in columnas_necesarias.items():
+        for col_dest, col_origen in columnas_df.items():
             if col_origen in df.columns:
                 df_resultado[col_dest] = df[col_origen]
             else:
@@ -876,15 +908,15 @@ class CopiarArchivo:
                 else:
                     df_resultado[col_dest] = ''
         
-        # Limpiar nombres de marca (quitar prefijo "COMODIN S.A.S - " y normalizar)
+        # Limpiar nombres de las  marcas
         if 'MARCA' in df_resultado.columns:
             def normalizar_marca(valor):
                 valor = str(valor).strip()
-                # Quitar prefijo
+
                 if 'COMODIN S.A.S - ' in valor:
                     valor = valor.replace('COMODIN S.A.S - ', '')
                 
-                # Normalizar nombres específicos (completar nombres)
+                # Normalizar nombres 
                 valor_upper = valor.upper()
                 if 'NAF' in valor_upper:
                     return 'NAF NAF'
@@ -902,9 +934,7 @@ class CopiarArchivo:
                 return valor
 
             df_resultado['MARCA'] = df_resultado['MARCA'].apply(normalizar_marca)
-        
-        
-        # Asegurar que VALOR A PAGAR es numérico
+
         df_resultado['VALOR A PAGAR'] = pd.to_numeric(df_resultado['VALOR A PAGAR'], errors='coerce').fillna(0)
         
         return df_resultado
@@ -958,7 +988,6 @@ class CopiarArchivo:
 
             else:
                 # Si es un solo registro, marcar como único para formato verde
-                # Modificar el último registro agregado (que es el detalle único)
                 if filas_resultado:
                     filas_resultado[-1]['_TIPO'] = 'DETALLE_UNICO'
                 
@@ -981,7 +1010,7 @@ class CopiarArchivo:
         
         try:
             # Usar DispatchEx para nueva instancia segura y evitar conflictos
-            excel = win32com.client.DispatchEx("Excel.Application")
+            excel = win32com.DispatchEx("Excel.Application")
             excel.Visible = False
             excel.DisplayAlerts = False
             
@@ -1020,7 +1049,7 @@ class CopiarArchivo:
                 cell = ws.Cells(1, col_idx)
                 cell.Value = header
                 cell.Font.Bold = True
-                cell.Font.Color = 0xFFFFFF  # Blanco
+                cell.Font.Color = 0xFFFFFF
                 cell.Interior.Color = 0x993366  # Morado
                 cell.HorizontalAlignment = -4108  # xlCenter
             
@@ -1029,7 +1058,7 @@ class CopiarArchivo:
             filas_blanco = []
             
             # Columnas para los datos
-            columnas_orden = ['IMPORTADOR', 'MARCA', 'PROVEEDOR', 'NRO. IMPO', 'VALOR A PAGAR', 'MONEDA', 'NOTA CRÉDITO']
+            """ columnas_orden = ['IMPORTADOR', 'MARCA', 'PROVEEDOR', 'NRO. IMPO', 'VALOR A PAGAR', 'MONEDA', 'NOTA CRÉDITO'] """
             
             for idx, row in df_agrupado.iterrows():
                 tipo_fila = row.get('_TIPO', 'DETALLE')
@@ -1042,7 +1071,6 @@ class CopiarArchivo:
                 
                 # Escribir datos según el tipo de fila
                 if tipo_fila == 'SUBTOTAL':
-                    # FILA DE SUBTOTAL (verde claro)
                     ws.Cells(fila_actual, 5).Formula = row['VALOR A PAGAR']
                     ws.Cells(fila_actual, 6).Value = row['MONEDA']
                     
@@ -1070,7 +1098,6 @@ class CopiarArchivo:
                     val_nota = row.get('NOTA CRÉDITO', 0)
                     ws.Cells(fila_actual, 7).Value = float(val_nota) if val_nota else 0
                     
-                    # Formato número (Moneda con 2 decimales)
                     ws.Cells(fila_actual, 5).NumberFormat = "$ #,##0.00"
                     ws.Cells(fila_actual, 7).NumberFormat = "$ #,##0.00"
                     
@@ -1128,9 +1155,6 @@ class CopiarArchivo:
             for fila in filas_blanco:
                 ws.Range(ws.Cells(fila, 1), ws.Cells(fila, 7)).Borders.LineStyle = -4142  # xlNone
             
-            # -------------------------------------------------------------------------
-            # TABLA DE RESUMEN (AL LADO DE LA TABLA)
-            # -------------------------------------------------------------------------
             col_resumen = 10  # Columna J
             fila_resumen = 2  # Empezar arriba
             
@@ -1262,7 +1286,7 @@ class CopiarArchivo:
         
         try:
             # Usamos DispatchEx para asegurar una instancia limpia y aislada
-            excel = win32com.client.DispatchEx("Excel.Application")
+            excel = win32com.DispatchEx("Excel.Application")
             excel.Visible = False
             excel.DisplayAlerts = False
             
@@ -1303,7 +1327,7 @@ class CopiarArchivo:
 
             self.log(f"Insertando {len(datos)} registros en fila {start_row}", "INFO")
             
-            # ESCRIBIR POR RANGO (Mucho más rápido y seguro que el bucle anterior)
+            # ESCRIBIR POR RANGO 
             num_filas = len(datos)
             num_cols = len(datos[0])
             
@@ -1340,7 +1364,7 @@ class CopiarArchivo:
     def ejecutar_proceso(self):
         """Ejecuta el proceso completo"""
         print("\n" + "="*80)
-        print("    AUTOMATIZACIÓN DE CONTROL DE PAGOS - VERSIÓN 1.0 ")
+        print("    AUTOMATIZACIÓN DE CONTROL DE PAGOS ")
         print("="*80 + "\n")
         
         try:
@@ -1400,54 +1424,67 @@ class CopiarArchivo:
             return None
 
 def main():
-    """Función principal"""
-    try:
-        # Configurar rutas
-        configurador = ConfiguradorRutas()
-        if not configurador.cargar_o_crear_config():
-            return
-        
-        rutas = configurador.obtener_rutas()
-        
-        # Mostrar ventana de selección de fecha
-        interfaz = InterfazModerna()
-        interfaz.crear_ventana()
-        
-        if not interfaz.ejecutar_proceso:
-            return
-        
-        # Confirmar ejecución
-        if not messagebox.askyesno(
-            "          -------------          Confirmar Ejecución          ------------- \n\n",
-            "Antes de continuar, asegúrese de:\n\n"
-            "   ✓ Haber actualizado el archivo 'CONTROL DE PAGOS.xlsm'\n"
-            "   ✓ Haber guardado todos los cambios\n"
-            "   ✓ Cerrar el archivo si está abierto\n\n"
-            "¿Desea continuar?"
-        ):
-            return
-        
-        # Crear ventana de progreso
-        ventana_prog = VentanaProgreso()
-        
-        try:
-            # Ejecutar proceso
-            copiador = CopiarArchivo(
-                fecha_filtrado=interfaz.fecha_seleccionada,
-                ventana_progreso=ventana_prog,
-                rutas_config=rutas
-            )
-            resultado = copiador.ejecutar_proceso()
-            
-            # Cerrar ventana de progreso
-            ventana_prog.cerrar()
-            
-        except Exception as e:
-            ventana_prog.cerrar()
-            messagebox.showerror("Error Fatal", f"Error inesperado:\n\n{str(e)}")
+    """Función principal con bucle para repetir procesos"""
+    configurador = ConfiguradorRutas()
+    if not configurador.cargar_o_crear_config():
+        return
     
-    except Exception as e:
-        messagebox.showerror("Error de Configuración", f"Error al iniciar:\n\n{str(e)}")
+    rutas = configurador.obtener_rutas()
+    
+    # Bucle principal - permite procesar múltiples fechas sin cerrar la aplicación
+    while True:
+        try:
+            # Mostrar ventana de selección de fecha
+            interfaz = InterfazModerna()
+            interfaz.crear_ventana()
+            
+            # Si el usuario cancela en la interfaz principal, salir del programa
+            if not interfaz.ejecutar_proceso:
+                break
+            
+            # Confirmar ejecución
+            if not messagebox.askyesno(
+                "          -------------          Confirmar Ejecución          ------------- \n\n",
+                "Antes de continuar, asegúrese de:\n\n"
+                "   ✓ Haber actualizado el archivo 'CONTROL DE PAGOS.xlsm'\n"
+                "   ✓ Haber guardado todos los cambios\n"
+                "   ✓ Cerrar el archivo si está abierto\n\n"
+                "¿Desea continuar?"
+            ):
+                continue
+            
+            # Crear ventana de progreso
+            ventana_prog = VentanaProgreso()
+            
+            try:
+                # Ejecutar proceso
+                copiador = CopiarArchivo(
+                    fecha_filtrado=interfaz.fecha_seleccionada,
+                    ventana_progreso=ventana_prog,
+                    rutas_config=rutas
+                )
+                resultado = copiador.ejecutar_proceso()
+                
+                # Cerrar ventana de progreso
+                ventana_prog.cerrar()
+                
+            except Exception as e:
+                ventana_prog.cerrar()
+                messagebox.showerror("Error Fatal", f"Error inesperado:\n\n{str(e)}")
+            
+            # Preguntar si desea procesar otra fecha
+            if not messagebox.askyesno(
+                "Proceso Completado",
+                "¿Desea procesar otra fecha?"
+            ):
+                # Usuario no quiere continuar, salir del programa
+                break
+        
+        except Exception as e:
+            messagebox.showerror("Error de Configuración", f"Error al iniciar:\n\n{str(e)}")
+            # En caso de error, preguntar si quiere intentar de nuevo
+            if not messagebox.askyesno("Error", "¿Desea intentar nuevamente?"):
+                break
 
 if __name__ == "__main__":
     try:

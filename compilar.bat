@@ -6,7 +6,6 @@ REM =====================================================
 echo.
 echo ========================================
 echo   COMPILADOR DE CONTROL DE PAGOS GCO
-echo   VERSION 3.0  
 echo ========================================
 echo.
 
@@ -15,12 +14,12 @@ REM PASO 0: Verificar que estamos en la carpeta correcta
 REM =====================================================
 echo [0/7] Verificando entorno...
 
-if not exist "control_pagos_v1.py" (
+if not exist "control_pagos_v3.py" (
     echo.
-    echo ERROR: No se encuentra control_pagos_v1.py
+    echo ERROR: No se encuentra control_pagos_v3.py
     echo.
     echo Asegurate de ejecutar este .bat desde la carpeta donde esta:
-    echo   - control_pagos_v1.py
+    echo   - control_pagos_v3.py
     echo   - icon.ico
     echo.
     pause
@@ -224,14 +223,18 @@ pyinstaller --onefile %modo% ^
     --hidden-import=win32timezone ^
     --hidden-import=openpyxl ^
     --hidden-import=openpyxl.styles ^
+    --hidden-import=openpyxl.styles.fonts ^
+    --hidden-import=openpyxl.styles.borders ^
+    --hidden-import=openpyxl.styles.alignment ^
     --hidden-import=openpyxl.cell ^
     --hidden-import=openpyxl.utils ^
+    --hidden-import=openpyxl.utils.dataframe ^
     --hidden-import=pandas ^
     --hidden-import=tkcalendar ^
     --hidden-import=babel.numbers ^
     --collect-all win32com ^
     --collect-all tkcalendar ^
-    control_pagos_v1.py
+    control_pagos_v3.py
 
 if errorlevel 1 (
     echo.
@@ -245,7 +248,7 @@ if errorlevel 1 (
     echo 1. Cierra cualquier archivo Excel que este abierto
     echo 2. Desactiva temporalmente el antivirus
     echo 3. Ejecuta este .bat como Administrador
-    echo 4. Verifica que no haya errores en control_pagos_v1.py
+    echo 4. Verifica que no haya errores en control_pagos_v3.py
     echo.
     pause
     exit /b 1
@@ -317,12 +320,12 @@ pause
 
 REM Ejecutar el .exe
 cd dist
-start Control de Pagos.exe
+start "Control de Pagos" "Control de Pagos.exe"
 cd ..
 
 echo.
 echo ========================================
-echo   COMPILACION EXITOSA
+echo   COMPILACION EXITOSA - VERSION 3.0
 echo ========================================
 echo.
 echo El ejecutable esta en:
@@ -333,9 +336,10 @@ echo.
 
 if "%modo%"=="--console" (
     echo 1. Prueba el programa completamente
-    echo 2. Si funciona bien, vuelve a compilar con opcion 2
+    echo 2. Procesa varias fechas para verificar el bucle
+    echo 3. Si funciona bien, vuelve a compilar con opcion 2
     echo    para eliminar la ventana de consola
-    echo 3. Distribuye el .exe final
+    echo 4. Distribuye el .exe final
 ) else (
     echo 1. Si el programa funciono correctamente:
     echo    - Puedes distribuir este .exe
