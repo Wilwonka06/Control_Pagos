@@ -644,7 +644,7 @@ class CopiarArchivo:
             except Exception as e:
                 self.log(f"No se pudieron ajustar permisos de escritura: {e}", "WARN")
             
-            # ABRIR EL NUEVO ARCHIVO para limpiar hojas
+            # ABRIR EL NUEVO ARCHIVO para limpiar hojasñ
             self.log("Abriendo archivo nuevo para limpieza...", "INFO")
             wb = excel.Workbooks.Open(
                 ruta_dest_str,
