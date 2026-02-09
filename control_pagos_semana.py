@@ -947,17 +947,18 @@ class CopiarArchivo:
         df['VALOR A PAGAR'] = pd.to_numeric(df['VALOR A PAGAR'], errors='coerce').fillna(0)
         df['NOTA CRÉDITO'] = pd.to_numeric(df['NOTA CRÉDITO'], errors='coerce').fillna(0)
         
-        # Ordenar por PROVEEDOR y MARCA
-        df = df.sort_values(by=['PROVEEDOR', 'MARCA']).reset_index(drop=True)
+        # Ordenar por IMPORTADOR, PROVEEDOR y MARCA (Solicitud: Importadores en orden alfabético)
+        df = df.sort_values(by=['IMPORTADOR', 'PROVEEDOR', 'MARCA']).reset_index(drop=True)
         
         # Preparar resultado con metadatos para formato
         filas_resultado = []
-        grupos = df.groupby('PROVEEDOR', sort=False)
+        # Agrupar por IMPORTADOR y PROVEEDOR para mantener orden visual
+        grupos = df.groupby(['IMPORTADOR', 'PROVEEDOR'], sort=False)
 
         fila_actual = 2
         letra_columna = 'E'
 
-        for proveedor, grupo in grupos:
+        for (importador, proveedor), grupo in grupos:
             # Agregar filas del grupo
             fila_inicio = fila_actual
             for idx, row in grupo.iterrows():
@@ -1242,7 +1243,8 @@ class CopiarArchivo:
         
         df_final['IMPORTADOR'] = df_detalle['IMPORTADOR']
         df_final['MARCA'] = df_detalle['MARCA']
-        df_final['FECHA DE PAGO'] = fecha_proyeccion.strftime('%d/%m/%Y')
+        # Pasar objeto fecha directamente para evitar ambigüedad (dd/mm vs mm/dd) en Excel
+        df_final['FECHA DE PAGO'] = fecha_proyeccion.strftime('%m/%d/%Y')
         df_final['DIA'] = fecha_proyeccion.day
         df_final['MES'] = fecha_proyeccion.month
         df_final['AÑO'] = fecha_proyeccion.year

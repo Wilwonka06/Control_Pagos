@@ -11,8 +11,8 @@ echo ========================================
 echo.
 
 REM Verificar archivo
-if not exist "control_pagos.py" (
-    echo ERROR: No se encuentra control_pagos.py
+if not exist "control_pagos_semana.py" (
+    echo ERROR: No se encuentra control_pagos_semana.py
     echo.
     pause
     exit /b 1
@@ -86,7 +86,7 @@ pyinstaller --onefile %modo% ^
     --hidden-import=babel.numbers ^
     --collect-all win32com ^
     --collect-all tkcalendar ^
-    control_pagos.py
+    control_pagos_semana.py
 
 if errorlevel 1 (
     echo.
