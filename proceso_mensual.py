@@ -726,10 +726,6 @@ class ProcesadorMensual:
     def guardar_proyeccion_com(self, ruta_archivo, df_agrupado, nombre_hoja, df_origen=None):
         self.log("Escribiendo Excel...", "INFO")
         pythoncom.CoInitialize()
-        # Usar Dispatch en lugar de DispatchEx para intentar reutilizar instancia si es posible,
-        # o mantener DispatchEx si queremos aislamiento. 
-        # El error "La llamada fue rechazada" suele ser por sobrecarga de mensajes.
-        # Vamos a intentar un enfoque con reintentos para la escritura.
         try:
             excel = win32com.DispatchEx("Excel.Application")
             excel.Visible = False
@@ -754,8 +750,6 @@ class ProcesadorMensual:
             ]
             
             # Índices de columnas (1-based)
-            # Fechas: 1, 8, 13, 14, 15
-            # Numéricas: 9, 10, 11, 16
             cols_fecha = {1, 8, 13, 14, 15}
             cols_num = {9, 10, 11, 16}
             

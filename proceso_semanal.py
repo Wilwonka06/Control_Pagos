@@ -1134,8 +1134,8 @@ class ProcesadorSemanal:
         return df_final
     
     def anexar_archivo_final_com(self, df_detalle):
-        """Anexa datos al archivo final usando COM con mayor robustez"""
-        self.log("Anexando datos al archivo final", "INFO")
+        """Anexa o reemplaza datos al archivo final usando COM con validación de duplicados"""
+        self.log("Actualizando archivo final (Verificando duplicados)...", "INFO")
         
         pythoncom.CoInitialize()
         excel = None
@@ -1150,7 +1150,7 @@ class ProcesadorSemanal:
             archivo_path = str(self.ruta_destino_final.absolute())
             wb = excel.Workbooks.Open(archivo_path)
             
-            # --- MEJORA: Búsqueda flexible de la hoja ---
+            # --- Búsqueda flexible de la hoja ---
             ws = None
             nombres_hojas = [sheet.Name.upper() for sheet in wb.Sheets]
             self.log(f"Hojas en destino: {nombres_hojas}", "INFO")
@@ -1168,32 +1168,158 @@ class ProcesadorSemanal:
             else:
                 self.log(f"Escribiendo en hoja confirmada: '{ws.Name}'", "OK")
 
-            # Preparar datos (limpieza de nulos para Excel)
-            datos = df_detalle.fillna("").values.tolist()
-            if not datos:
-                self.log("No hay datos para anexar", "WARN")
-                return
+            # --- LÓGICA DE DETECCIÓN Y REEMPLAZO DE DUPLICADOS ---
+            used_range = ws.UsedRange
+            filas_totales = used_range.Rows.Count
             
-            # --- MEJORA: Encontrar última fila real ---
-            # Si la columna A está vacía en la fila 1, empezamos en 1.
-            last_row = ws.Cells(ws.Rows.Count, 1).End(-4162).Row
-            if last_row == 1 and ws.Cells(1, 1).Value is None:
-                start_row = 1
-            else:
-                start_row = last_row + 1
+            start_row = filas_totales + 1
+            datos_a_escribir = []
+            escribir_todo = False
+            headers_finales = []
+            
+            # Función auxiliar para normalizar valores clave
+            def normalizar_clave(val):
+                if val is None: return ""
+                s = str(val).strip()
+                # Intentar normalizar fecha si es necesario
+                try:
+                    # Si es datetime de Excel
+                    if isinstance(val, datetime):
+                        return val.strftime('%m/%d/%Y')
+                    # Si es string
+                    if '/' in s or '-' in s:
+                        ts = pd.to_datetime(s, errors='coerce')
+                        if not pd.isna(ts):
+                            return ts.strftime('%m/%d/%Y')
+                except:
+                    pass
+                return s
 
-            self.log(f"Insertando {len(datos)} registros en fila {start_row}", "INFO")
+            if filas_totales > 1:
+                self.log("Leyendo registros existentes...", "INFO")
+                # Leer todo el contenido (tupla de tuplas)
+                raw_data = list(used_range.Value)
+                
+                # Encabezados (fila 1)
+                headers = [str(h).strip().upper() if h is not None else f"COL_{i}" for i, h in enumerate(raw_data[0])]
+                
+                cols_clave = ['FECHA DE PAGO', 'PROVEEDOR', 'IMPORTADOR', 'MARCA', '# IMPORTACION']
+                indices_clave = {col: headers.index(col) for col in cols_clave if col in headers}
+                
+                if len(indices_clave) == 5:
+                    # USAR LISTAS NATIVAS para iterar y filtrar (Evita error de Pandas iterrows con tipos mixtos)
+                    data_rows = [list(row) for row in raw_data[1:]]
+                    self.log(f"Registros previos: {len(data_rows)}", "INFO")
+                    
+                    # Generar claves para los nuevos registros
+                    claves_nuevas = set()
+                    for _, row in df_detalle.iterrows():
+                        key = (
+                            normalizar_clave(row.get('FECHA DE PAGO')),
+                            normalizar_clave(row.get('PROVEEDOR')),
+                            normalizar_clave(row.get('IMPORTADOR')),
+                            normalizar_clave(row.get('MARCA')),
+                            normalizar_clave(row.get('# IMPORTACION'))
+                        )
+                        claves_nuevas.add(key)
+                    
+                    # Identificar qué registros existentes conservar ITERANDO LISTA NATIVA
+                    rows_a_conservar = []
+                    duplicados_encontrados = 0
+                    
+                    # Indices para acceso directo (mucho más rápido y seguro que iterrows)
+                    idx_fecha = indices_clave['FECHA DE PAGO']
+                    idx_prov = indices_clave['PROVEEDOR']
+                    idx_imp = indices_clave['IMPORTADOR']
+                    idx_marca = indices_clave['MARCA']
+                    idx_nro = indices_clave['# IMPORTACION']
+                    max_idx_req = max(idx_fecha, idx_prov, idx_imp, idx_marca, idx_nro)
+
+                    for row in data_rows:
+                        try:
+                            # Si la fila está incompleta, la conservamos tal cual
+                            if len(row) <= max_idx_req:
+                                rows_a_conservar.append(row)
+                                continue
+
+                            key_existente = (
+                                normalizar_clave(row[idx_fecha]),
+                                normalizar_clave(row[idx_prov]),
+                                normalizar_clave(row[idx_imp]),
+                                normalizar_clave(row[idx_marca]),
+                                normalizar_clave(row[idx_nro])
+                            )
+                            
+                            if key_existente in claves_nuevas:
+                                duplicados_encontrados += 1
+                            else:
+                                rows_a_conservar.append(row)
+                        except Exception:
+                            # En caso de error de lectura de fila, conservar por seguridad
+                            rows_a_conservar.append(row)
+                    
+                    if duplicados_encontrados > 0:
+                        self.log(f"♻️ Reemplazando {duplicados_encontrados} registros duplicados.", "OK")
+                        
+                        # Crear DF solo con lo conservado para facilitar concat
+                        # Usamos dtype=object para evitar inferencias erróneas de pandas
+                        df_conservado = pd.DataFrame(rows_a_conservar, columns=headers)
+                        
+                        # Combinar: Conservados + Nuevos
+                        df_final_combinado = pd.concat([df_conservado, df_detalle], ignore_index=True)
+                        
+                        # Alinear columnas (mantener orden de Excel original, agregar nuevas al final)
+                        cols_finales = list(headers)
+                        for col in df_final_combinado.columns:
+                            if col not in cols_finales:
+                                cols_finales.append(col)
+                                
+                        # Reordenar y rellenar faltantes
+                        df_final_combinado = df_final_combinado.reindex(columns=cols_finales)
+                        
+                        datos_a_escribir = df_final_combinado.fillna("").values.tolist()
+                        headers_finales = cols_finales
+                        
+                        # Configurar escritura completa
+                        escribir_todo = True
+                        start_row = 2
+                    else:
+                        self.log("No se encontraron duplicados. Agregando al final.", "INFO")
+                        datos_a_escribir = df_detalle.fillna("").values.tolist()
+                else:
+                    self.log(f"Faltan columnas clave en destino: {[c for c in cols_clave if c not in headers]}. Agregando al final.", "WARN")
+                    datos_a_escribir = df_detalle.fillna("").values.tolist()
+            else:
+                # Archivo vacío o nuevo
+                self.log("Archivo destino vacío o nuevo.", "INFO")
+                datos_a_escribir = df_detalle.fillna("").values.tolist()
+                if filas_totales <= 1:
+                     start_row = filas_totales + 1
+
+            if not datos_a_escribir:
+                self.log("No hay datos para escribir.", "WARN")
+                return
+
+            # --- ESCRITURA ---
+            if escribir_todo:
+                # Limpiar contenido anterior (desde fila 2)
+                # Usamos ClearContents en un rango amplio para asegurar limpieza
+                ws.Range(ws.Cells(2, 1), ws.Cells(filas_totales + 1000, len(headers_finales) + 10)).ClearContents()
+                
+                # Si hay columnas nuevas, actualizar encabezados
+                if len(headers_finales) > len(headers):
+                    ws.Range(ws.Cells(1, 1), ws.Cells(1, len(headers_finales))).Value = headers_finales
             
-            # ESCRIBIR POR RANGO 
-            num_filas = len(datos)
-            num_cols = len(datos[0])
+            self.log(f"Escribiendo {len(datos_a_escribir)} registros desde fila {start_row}", "INFO")
             
-            # Definimos el rango exacto: desde A(start_row) hasta la última columna y fila
+            num_filas = len(datos_a_escribir)
+            num_cols = len(datos_a_escribir[0])
+            
             destino = ws.Range(
                 ws.Cells(start_row, 1), 
                 ws.Cells(start_row + num_filas - 1, num_cols)
             )
-            destino.Value = datos
+            destino.Value = datos_a_escribir
             
             # Forzar guardado
             wb.Save()
@@ -1201,13 +1327,16 @@ class ProcesadorSemanal:
             
         except Exception as e:
             self.log(f"Error crítico al anexar: {str(e)}", "ERROR")
+            traceback.print_exc()
             raise
             
         finally:
             if wb:
-                wb.Close(SaveChanges=True)
+                try: wb.Close(SaveChanges=True)
+                except: pass
             if excel:
-                excel.Quit()
+                try: excel.Quit()
+                except: pass
             pythoncom.CoUninitialize()
     
     def agregar_a_archivo_final(self, df_detalle):
