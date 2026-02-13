@@ -77,7 +77,7 @@ echo [5/5] Compilando sistema modular...
 echo.
 
 REM Compilar - Archivo principal que importa los módulos
-pyinstaller --onefile %modo% ^
+pyinstaller --onedir %modo% ^
     --icon=icon.ico ^
     --name="Control de Pagos GCO" ^
     --add-data "icon.ico;." ^
