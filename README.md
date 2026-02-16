@@ -1,115 +1,115 @@
-# Control de Pagos GCO - Versión 2.5.0
+# � Documentación del Sistema: Control de Pagos Importaciones v1.0.0
 
-## 📝 Historial de Actualizaciones
+Este documento sirve como guía técnica y de usuario para el sistema de **Proyección de Pagos (Semanal y Mensual)**. Está diseñado para ser entendido tanto por usuarios finales como por personal técnico.
 
-### Versión 2.5.0
-- **Arquitectura Modular**: Separación del sistema en módulos especializados:
-  - `Inicio_control.py`: Lanzador principal con selección de modo (Semanal/Mensual).
-  - `control_pagos_semana.py`: Lógica específica para proyecciones semanales.
-  - `control_pagos_mes.py`: Lógica específica para proyecciones mensuales.
-- **Proyección Mensual Completa**:
-  - Generación de archivo con nombre del mes (ej. FEBRERO.xlsx).
-  - Inclusión de todos los registros del mes (PAGAR y PENDIENTE).
-  - Agrupación por Proveedor y subtotales semanales.
-  - Numeración de semanas relativa al mes (1, 2, 3, 4, 5).
-  - Tablas resumen por semana y totales generales.
-- **Normalización de Marcas**: Unificación automática de nombres de marcas (ej. CHEVIÑON -> CHEVIGNON) en ambos reportes.
-- **Mejoras en Estabilidad**:
-  - Manejo robusto de fechas anteriores a 1900.
-  - Recuperación automática ante errores de bloqueo de Excel (COM).
-  - Escritura directa de fórmulas para garantizar precisión en cálculos.
+---
 
-### Versión 2.4.1
-- **Mejora en la Interfaz**: Actualización de colores y estilos para mejorar la usabilidad.
-- **Compatibilidad con Python 3.11**: Ajustes para asegurar la compatibilidad.
-- **Combinación de interfaces**: Integración inicial en un lanzador único.
+##  ¿Qué es Python?
+**Python** es el lenguaje de programación en el que está construido este sistema. Imagínalo como el "motor" que impulsa todas las operaciones. Es conocido por ser:
+*   **Legible:** Su código se parece mucho al inglés simple.
+*   **Versátil:** Se usa para todo, desde sitios web hasta inteligencia artificial y automatización de Excel (como en este caso).
+*   **Potente:** Permite procesar miles de filas de datos en segundos, algo que manual o visualmente en Excel tomaría mucho más tiempo.
 
-## 📋 Descripción
+---
 
-Sistema automatizado para la gestión de proyecciones de pagos de importaciones. Esta herramienta facilita el flujo de trabajo mediante la generación automática de proyecciones semanales y mensuales, procesando el archivo maestro de control de pagos.
+## �️ Librerías Utilizadas (Las "Herramientas")
+Para que Python pueda hacer su magia, utiliza conjuntos de herramientas especializadas llamadas "librerías". Aquí explicamos las más importantes usadas en este proyecto:
 
-## ⚙️ Funcionalidades
+### 1. Pandas (`pandas`)
+*   **¿Qué es?**: Es la herramienta de análisis de datos más potente de Python.
+*   **¿Para qué la usamos?**: Es el "cerebro" analítico. Una vez que sacamos los datos de Excel, Pandas los convierte en una tabla virtual (DataFrame). Nos permite:
+    *   Filtrar pagos por fecha.
+    *   Eliminar filas vacías.
+    *   Detectar duplicados.
+    *   Ordenar y transformar columnas masivamente.
 
-### Proyección Semanal
-- Filtrado por fecha de corte (próximo miércoles).
-- Inclusión de registros con estado "PAGAR".
-- Agrupación por Marca y Proveedor.
-- Generación de archivo con estructura de carpetas: `AÑO YYYY/MES/SEMANA XX`.
+### 2. PyWin32 (`win32com.client`)
+*   **¿Qué es?**: Un puente que permite a Python "hablar" directamente con las aplicaciones de Windows.
+*   **¿Para qué la usamos?**: Es nuestro "titiritero" de Excel. Pandas es genial leyendo datos, pero malo manejando archivos con Macros (`.xlsm`) o actualizando vínculos externos. Usamos esta librería para:
+    *   Abrir Excel en segundo plano (invisible).
+    *   Dar la orden de "Actualizar todo" (RefreshAll) para que las fórmulas traigan los datos más recientes.
+    *   Guardar una copia limpia sin macros (.xlsx) para que Pandas la pueda leer.
 
-### Proyección Mensual
-- Filtrado por Mes completo.
-- Inclusión de todos los registros (PAGAR y PENDIENTE).
-- Agrupación por Proveedor con cortes semanales.
-- Generación de archivo único por mes: `AÑO YYYY/MES/MES.xlsx`.
-- Segunda hoja con detalle agregado.
+### 3. Tkinter (`tkinter`)
+*   **¿Qué es?**: La librería estándar para crear interfaces gráficas (ventanas).
+*   **¿Para qué la usamos?**: Para que no tengas que tocar código. Crea:
+    *   La ventana de bienvenida.
+    *   Los selectores de fechas y calendarios.
+    *   La barra de progreso.
+    *   Los mensajes de "Éxito" o "Error".
 
-## 🖥️ Interfaz de Usuario
+### 4. TkCalendar (`tkcalendar`)
+*   **¿Qué es?**: Una extensión visual para Tkinter.
+*   **¿Para qué la usamos?**: Provee el calendario desplegable amigable donde seleccionas la fecha de corte.
 
-- **Lanzador Unificado**: Menú principal para elegir entre proceso Semanal o Mensual.
-- **Selectores Inteligentes**:
-  - Semanal: Calendario para elegir fecha de corte.
-  - Mensual: Selectores de Mes y Año.
-- **Progreso Visual**: Barra de progreso y logs en tiempo real.
+### 5. ⚙️ ConfigParser (`configparser`)
+*   **¿Qué es?**: Manejador de archivos de configuración.
+*   **¿Para qué la usamos?**: Crea y lee el archivo `config_pagos.ini`. Gracias a esto, el programa "recuerda" dónde están tus archivos y carpetas, para que no tengas que seleccionarlos cada vez que lo abres.
 
-## 🔧 Configuración Inicial
+---
 
-Al ejecutar la aplicación por primera vez, se solicitará la configuración de las rutas de trabajo (guardadas en `config_pagos.ini`):
+##  Estructura del Proyecto y Funciones Clave
 
-1.  **Archivo Origen**: Ubicación del archivo `CONTROL DE PAGOS.xlsm`.
-2.  **Carpeta de Proyecciones**: Directorio base para guardar los archivos generados.
-3.  **Archivo Final**: Ubicación del archivo maestro `CONTROL PAGOS.xlsx` (solo lectura/referencia).
+El sistema se divide en 3 archivos principales de código (`.py`). Aquí explicamos qué hace cada uno y sus funciones más importantes.
 
-## 🚀 Instalación y Ejecución
+### 1. `Inicio_control.py` (El Cerebro Principal)
+Es el punto de entrada. Cuando haces doble clic en el ícono, este es el archivo que se ejecuta primero.
 
-### Requisitos Previos
-- Python 3.8+
-- Microsoft Excel instalado (para automatización COM).
+*   **`main()`**: La función directora.
+    *   Verifica si ya configuraste las rutas (dónde están tus archivos).
+    *   Muestra la ventana para elegir entre "Semanal" o "Mensual".
+    *   Llama al proceso correspondiente según tu elección.
+    *   Maneja errores globales (si algo explota, aquí se captura y se guarda en el reporte de errores).
 
-### Instalación de Dependencias
-```bash
-pip install -r requirements.txt
-```
+*   **`ConfiguradorRutas.cargar_o_crear_config()`**:
+    *   Busca el archivo `config_pagos.ini`. Si no existe, lanza la ventana de "Primera Configuración" pidiéndote ubicar los archivos clave.
 
-### Ejecución del Sistema
-El punto de entrada es el script `Inicio_control.py`:
+*   **`VentanaSeleccionTipo`**:
+    *   Dibuja la ventana azul con los dos botones grandes: "Proyección Semanal" y "Proyección Mensual".
 
-```bash
-python Inicio_control.py
-```
+### 2. `proceso_semanal.py` (Lógica Semanal)
+Se encarga de generar la proyección para una semana específica (usualmente el próximo miércoles).
 
-### Compilación (Generar Ejecutable)
-Para generar el ejecutable de la aplicación:
+*   **`ProcesadorSemanal.copiar_archivo_base()`**: **CRÍTICA**.
+    1.  Abre tu archivo original con Macros (`.xlsm`) usando Excel real.
+    2.  Ejecuta "Actualizar Vínculos" para traer datos frescos.
+    3.  Guarda una copia temporal como `.xlsx` (sin macros) para que sea seguro y fácil de leer.
+    4.  Elimina hojas innecesarias para aligerar el archivo.
 
-```bash
-pyinstaller --noconsole --onedir --clean --name="Control Pagos GCO" --icon=icon.ico --hidden-import=pandas --hidden-import=openpyxl --hidden-import=win32com.client --hidden-import=tkcalendar --hidden-import=babel.numbers --collect-all pandas Inicio_control.py
-```
+*   **`ProcesadorSemanal.filtrar_por_fecha()`**:
+    *   Toma todos los datos y se queda SOLO con los que tienen `FECHA DE PAGO` coincidente con la fecha que elegiste en el calendario.
 
-## 📁 Estructura del Proyecto
+*   **`ProcesadorSemanal.anexar_archivo_final_com()`**:
+    *   Esta es la función "inteligente" de guardado.
+    *   Abre el archivo final acumulado.
+    *   **Verifica duplicados:** Compara lo que vas a guardar con lo que ya existe (usando Fecha, Proveedor e Importador como clave).
+    *   Si encuentra registros idénticos, los **reemplaza**. Si son nuevos, los **agrega** al final.
 
-```
-Control de Pagos/
-│
-├── Inicio_control.py           # Lanzador principal (Menu)
-├── control_pagos_semana.py     # Lógica de proyección semanal
-├── control_pagos_mes.py        # Lógica de proyección mensual
-├── config_pagos.ini            # Configuración de rutas (auto-generado)
-├── icon.ico                    # Icono de la aplicación
-├── requirements.txt            # Dependencias
-└── README.md                   # Documentación
-```
+### 3. `proceso_mensual.py` (Lógica Mensual)
+Similar al semanal, pero enfocado en reportes de mes completo.
 
-## 🐛 Solución de Problemas Comunes
+*   **`InterfazMensual`**:
+    *   Muestra selectores de "Mes" (Enero, Febrero...) y "Año", en lugar de un calendario de días específicos.
 
-- **Error de Rutas**: Si cambia la ubicación de los archivos, elimine `config_pagos.ini` para reconfigurar.
-- **Excel Bloqueado**: Si el script falla por "Call rejected by callee", asegúrese de no tener celdas en edición en ningún Excel abierto. El sistema intentará reintentar automáticamente.
-- **Fechas Antiguas**: El sistema convierte automáticamente fechas anteriores a 1900 a texto para evitar errores de Excel.
+*   **`ProcesadorMensual.filtrar_por_fecha()`**:
+    *   En lugar de buscar un día exacto, busca todos los pagos cuyo mes y año coincidan con tu selección.
 
-## 👥 Créditos
+---
 
-Desarrollado para GCO - Gestión de Control de Pagos.
+##  Guía de Instalación Rápida (Para Técnicos)
 
-## � Contacto
+Si necesitas reinstalar el sistema en una computadora nueva:
 
-Para soporte o reportar errores:
-*   **Correo**: rojaswil336@gmail.com
-*   **Teléfono**: 3207199395
+1.  **Instalar Python**: Descarga Python (versión 3.10 o superior) desde python.org. Al instalar, marca la casilla **"Add Python to PATH"**.
+2.  **Instalar Librerías**: Abre la terminal (CMD) en la carpeta del proyecto y ejecuta:
+    ```bash
+    pip install -r requirements.txt
+    ```
+    *(Esto instalará automáticamente pandas, pywin32, openpyxl, tkcalendar, etc.)*
+3.  **Ejecutar**:
+    Doble clic en `Inicio_control.py` (o usa el archivo `compilar.bat` si deseas crear un ejecutable .exe).
+
+---
+
+## 📞 Soporte
+Para cambios en la lógica de negocio (ej. cambiar columnas, nuevas reglas de filtrado) o errores técnicos, contactar al desarrollador encargado.

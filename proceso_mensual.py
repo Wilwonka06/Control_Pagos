@@ -348,14 +348,41 @@ class ProcesadorMensual:
                 Notify=False
             )
             
-            self.log("Actualizando vínculos y recalculando fórmulas...", "INFO")
+            self.log("Actualizando datos específicos de la hoja 'Control_pagos'...", "INFO")
             try:
-                wb.RefreshAll()
-                excel.CalculateFull()
-                time.sleep(3)
-                self.log("Datos actualizados correctamente", "OK")
+                # Intentar obtener la hoja por su nombre exacto
+                try:
+                    hoja_control = wb.Sheets("Control_Pagos")
+                except Exception:
+                    # Búsqueda de respaldo si el nombre varía ligeramente
+                    hoja_control = None
+                    for sheet in wb.Sheets:
+                        if sheet.Name.lower() == "control_Pagos":
+                            hoja_control = sheet
+                            break
+                
+                if hoja_control:
+                    self.log(f"Actualizando conexiones en hoja: '{hoja_control.Name}'", "INFO")
+                    
+                    # Actualizar solo QueryTables (conexiones de datos) de esa hoja
+                    for qt in hoja_control.QueryTables:
+                        qt.Refresh(BackgroundQuery=False)
+                    
+                    # Actualizar ListObjects (Tablas que pueden tener conexiones)
+                    for lo in hoja_control.ListObjects:
+                        if lo.QueryTable:
+                            lo.QueryTable.Refresh(BackgroundQuery=False)
+                    
+                    # Actualizar PivotTables (Tablas dinámicas) si las hay
+                    for pt in hoja_control.PivotTables():
+                        pt.PivotCache().Refresh()
+                        
+                    self.log("Datos de la hoja actualizados correctamente", "OK")
+                else:
+                    self.log("No se encontró la hoja 'Control_pagos' para actualizar", "WARN")
+                    
             except Exception as e:
-                self.log(f"Advertencia al actualizar: {e}", "WARN")
+                self.log(f"Advertencia al actualizar datos: {e}", "WARN")
 
             self.log("Haciendo visibles todas las hojas...", "INFO")
             for sheet in wb.Sheets:

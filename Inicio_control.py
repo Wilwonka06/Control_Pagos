@@ -377,8 +377,6 @@ def main():
                 if not messagebox.askyesno(
                     "Confirmar Ejecución",
                     "Antes de continuar, asegúrese de:\n\n"
-                    "   ✓ Haber actualizado el archivo 'CONTROL DE PAGOS.xlsm'\n"
-                    "   ✓ Haber guardado todos los cambios\n"
                     "   ✓ Cerrar el archivo si está abierto\n\n"
                     "¿Desea continuar?"
                 ):
