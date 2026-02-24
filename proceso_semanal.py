@@ -39,19 +39,22 @@ class InterfazSemanal:
         self.fecha_seleccionada = None
         self.ejecutar_proceso = False
         
+        # Modern color palette
         self.COLOR_PRIMARIO = "#2C3E50"
         self.COLOR_SECUNDARIO = "#3498DB"
         self.COLOR_ACENTO = "#27AE60"
         self.COLOR_FONDO = "#ECF0F1"
+        self.COLOR_CARTA = "#FFFFFF"
         self.COLOR_TEXTO = "#2C3E50"
+        self.COLOR_TEXTO_CLARO = "#7F8C8D"
         self.COLOR_ERROR = "#E74C3C"
         
     def crear_ventana(self):
         """Crea la ventana de interfaz moderna"""
         self.root = tk.Tk()
         aplicar_icono_ventana(self.root)
-        self.root.title("Control de Pagos GCO")
-        self.root.geometry("700x600")
+        self.root.title("Control de Pagos GCO - Proyección Semanal")
+        self.root.geometry("700x580")
         self.root.resizable(False, False)
         self.root.configure(bg=self.COLOR_FONDO)
         
@@ -82,7 +85,6 @@ class InterfazSemanal:
         style.configure(
             "Modern.TLabelframe",
             background=self.COLOR_FONDO,
-            bordercolor=self.COLOR_SECUNDARIO,
             borderwidth=2
         )
         style.configure(
@@ -91,10 +93,20 @@ class InterfazSemanal:
             foreground=self.COLOR_PRIMARIO,
             font=("Segoe UI", 11, "bold")
         )
+        
+        # Style for combobox
+        style.configure(
+            "Modern.TCombobox",
+            fieldbackground=self.COLOR_CARTA,
+            background=self.COLOR_SECUNDARIO,
+            foreground=self.COLOR_TEXTO,
+            lightcolor=self.COLOR_SECUNDARIO,
+            darkcolor=self.COLOR_SECUNDARIO
+        )
     
     def crear_header(self, parent):
         """Crea el header con título"""
-        header_frame = tk.Frame(parent, bg=self.COLOR_PRIMARIO, height=140)
+        header_frame = tk.Frame(parent, bg=self.COLOR_PRIMARIO, height=120)
         header_frame.pack(fill=tk.X, pady=0)
         header_frame.pack_propagate(False)
         
@@ -103,8 +115,8 @@ class InterfazSemanal:
         
         icon_label = tk.Label(
             content,
-            text="📊",
-            font=("Segoe UI", 30),
+            text="📅",
+            font=("Segoe UI", 28),
             bg=self.COLOR_PRIMARIO,
             fg="white"
         )
@@ -115,7 +127,7 @@ class InterfazSemanal:
         
         titulo = tk.Label(
             text_frame,
-            text="Control de Pagos",
+            text="Proyección Semanal",
             font=("Segoe UI", 20, "bold"),
             bg=self.COLOR_PRIMARIO,
             fg="white"
@@ -134,24 +146,37 @@ class InterfazSemanal:
     def crear_contenido(self, parent):
         """Crea el contenido principal"""
         content_frame = tk.Frame(parent, bg=self.COLOR_FONDO)
-        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=25)
         
-        card_frame = tk.Frame(content_frame, bg="white", relief=tk.FLAT, borderwidth=0)
+        # Card frame with shadow
+        card_frame = tk.Frame(content_frame, bg=self.COLOR_CARTA, relief=tk.FLAT, borderwidth=0)
         card_frame.pack(fill=tk.BOTH, expand=True)
         
         self.agregar_sombra(card_frame)
         
-        inner_frame = tk.Frame(card_frame, bg="white")
-        inner_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        inner_frame = tk.Frame(card_frame, bg=self.COLOR_CARTA)
+        inner_frame.pack(fill=tk.BOTH, expand=True, padx=25, pady=25)
         
-        section_title = tk.Label(
-            inner_frame,
-            text="📅 Selección de Fecha de Proyección",
+        # Section title with icon
+        section_title = tk.Frame(inner_frame, bg=self.COLOR_CARTA)
+        section_title.pack(fill=tk.X, pady=(0, 5))
+        
+        icon_section = tk.Label(
+            section_title,
+            text="📆",
+            font=("Segoe UI", 16),
+            bg=self.COLOR_CARTA
+        )
+        icon_section.pack(side=tk.LEFT)
+        
+        title_text = tk.Label(
+            section_title,
+            text="Selección de Fecha de Proyección",
             font=("Segoe UI", 14, "bold"),
-            bg="white",
+            bg=self.COLOR_CARTA,
             fg=self.COLOR_PRIMARIO
         )
-        section_title.pack(pady=(0, 5))
+        title_text.pack(side=tk.LEFT, padx=(8, 0))
         
         separator = tk.Frame(inner_frame, height=2, bg=self.COLOR_SECUNDARIO)
         separator.pack(fill=tk.X, pady=(0, 20))
@@ -160,45 +185,66 @@ class InterfazSemanal:
             inner_frame,
             text="Selecciona la fecha para la cual deseas generar la proyección de pagos.\nPor defecto, se sugiere el próximo miércoles.",
             font=("Segoe UI", 10),
-            bg="white",
-            fg="#7F8C8D",
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO_CLARO,
             justify=tk.CENTER
         )
         desc_label.pack(pady=(0, 25))
         
-        cal_frame = tk.Frame(inner_frame, bg="white")
-        cal_frame.pack(pady=10)
+        # Calendar container with styling
+        cal_container = tk.Frame(inner_frame, bg=self.COLOR_CARTA)
+        cal_container.pack(pady=15)
+        
+        # Calendar frame with border
+        cal_frame = tk.Frame(cal_container, bg="#E8F4FD", relief=tk.FLAT, borderwidth=2)
+        cal_frame.pack(pady=5)
         
         self.calendario = DateEntry(
             cal_frame,
             width=22,
             background=self.COLOR_SECUNDARIO,
             foreground='white',
-            borderwidth=2,
+            borderwidth=0,
             font=("Segoe UI", 12),
             date_pattern='dd/mm/yyyy',
             locale='es_ES',
             selectbackground=self.COLOR_ACENTO,
-            selectforeground='white'
+            selectforeground='white',
+            todaybackground=self.COLOR_PRIMARIO,
+            normalbackground=self.COLOR_CARTA,
+            othermonthbackground="#D5D5D5",
+            othermonthwebackground="#D5D5D5"
         )
-        self.calendario.pack(pady=10)
+        self.calendario.pack(padx=10, pady=10)
         
         proximo_miercoles = self.obtener_proximo_miercoles(datetime.now())
         self.calendario.set_date(proximo_miercoles)
         
-        fecha_label = tk.Label(
-            inner_frame,
-            text=f"Fecha sugerida: {proximo_miercoles.strftime('%d/%m/%Y')}",
-            font=("Segoe UI", 9, "italic"),
-            bg="white",
-            fg="#95A5A6"
+        # Info label
+        info_frame = tk.Frame(inner_frame, bg="#E8F8F5")
+        info_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        info_icon = tk.Label(
+            info_frame,
+            text="💡",
+            font=("Segoe UI", 12),
+            bg="#E8F8F5"
         )
-        fecha_label.pack(pady=(5, 0))
+        info_icon.pack(side=tk.LEFT, padx=(10, 5), pady=8)
+        
+        fecha_label = tk.Label(
+            info_frame,
+            text=f"Fecha sugerida: {proximo_miercoles.strftime('%d de %B de %Y')}",
+            font=("Segoe UI", 9, "italic"),
+            bg="#E8F8F5",
+            fg="#1D8348"
+        )
+        fecha_label.pack(side=tk.LEFT, pady=8)
     
     def crear_footer(self, parent):
         """Crea el footer con botones"""
         footer_frame = tk.Frame(parent, bg=self.COLOR_FONDO, height=80)
-        footer_frame.pack(fill=tk.X, pady=(0, 20))
+        footer_frame.pack(fill=tk.X, pady=(0, 15))
         footer_frame.pack_propagate(False)
         
         button_frame = tk.Frame(footer_frame, bg=self.COLOR_FONDO)
@@ -206,11 +252,11 @@ class InterfazSemanal:
         
         btn_cancelar = tk.Button(
             button_frame,
-            text="Cancelar",
+            text="✕ Cancelar",
             command=self.cancelar,
             font=("Segoe UI", 11),
-            bg="white",
-            fg=self.COLOR_TEXTO,
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO_CLARO,
             relief=tk.FLAT,
             borderwidth=2,
             padx=30,
@@ -219,6 +265,7 @@ class InterfazSemanal:
         )
         btn_cancelar.pack(side=tk.LEFT, padx=10)
         
+        # Continue button
         btn_continuar = tk.Button(
             button_frame,
             text="Continuar ➔",
@@ -235,16 +282,16 @@ class InterfazSemanal:
         btn_continuar.pack(side=tk.LEFT, padx=10)
         
         def on_enter_cancelar(e):
-            btn_cancelar['bg'] = "#BDC3C7"
+            btn_cancelar.configure(bg="#E74C3C", fg="white")
         
         def on_leave_cancelar(e):
-            btn_cancelar['bg'] = "white"
+            btn_cancelar.configure(bg=self.COLOR_CARTA, fg=self.COLOR_TEXTO_CLARO)
         
         def on_enter_continuar(e):
-            btn_continuar['bg'] = "#229954"
+            btn_continuar.configure(bg="#229954")
         
         def on_leave_continuar(e):
-            btn_continuar['bg'] = self.COLOR_ACENTO
+            btn_continuar.configure(bg=self.COLOR_ACENTO)
         
         btn_cancelar.bind("<Enter>", on_enter_cancelar)
         btn_cancelar.bind("<Leave>", on_leave_cancelar)
@@ -301,34 +348,202 @@ class VentanaProgreso:
         self.root = tk.Tk()
         aplicar_icono_ventana(self.root)
         self.root.title("Procesando...")
-        self.root.geometry("600x300")
+        self.root.geometry("650x400")
         self.root.resizable(False, False)
         self.root.configure(bg="#ECF0F1")
         
+        # Modern color palette
+        self.COLOR_PRIMARIO = "#2C3E50"
+        self.COLOR_SECUNDARIO = "#3498DB"
+        self.COLOR_ACENTO = "#27AE60"
+        self.COLOR_FONDO = "#ECF0F1"
+        self.COLOR_CARTA = "#FFFFFF"
+        self.COLOR_TEXTO = "#2C3E50"
+        self.COLOR_TEXTO_CLARO = "#7F8C8D"
+        
         self.centrar_ventana()
         
-        # Frame principal
-        main_frame = tk.Frame(self.root, bg="#ECF0F1")
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        # Header
+        header_frame = tk.Frame(self.root, bg=self.COLOR_PRIMARIO, height=70)
+        header_frame.pack(fill=tk.X)
+        header_frame.pack_propagate(False)
         
-        # Título
-        titulo = tk.Label(
-            main_frame,
-            text="⚙️ Procesando Control de Pagos",
-            font=("Segoe UI", 16, "bold"),
-            bg="#ECF0F1",
-            fg="#2C3E50"
-        )
-        titulo.pack(pady=(0, 20))
+        header_content = tk.Frame(header_frame, bg=self.COLOR_PRIMARIO)
+        header_content.place(relx=0.5, rely=0.5, anchor="center")
         
-        # Barra de progreso
-        self.progress = ttk.Progressbar(
-            main_frame,
-            mode='indeterminate',
-            length=560
+        icon_label = tk.Label(
+            header_content,
+            text="⚙️",
+            font=("Segoe UI", 20),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
         )
-        self.progress.pack(pady=(10, 0))
-        self.progress.start(10)
+        icon_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+        title_label = tk.Label(
+            header_content,
+            text="Procesando Proyección Semanal",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
+        )
+        title_label.pack(side=tk.LEFT)
+        
+        # Main content frame
+        main_frame = tk.Frame(self.root, bg=self.COLOR_FONDO)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Progress card
+        progress_card = tk.Frame(main_frame, bg=self.COLOR_CARTA, relief=tk.FLAT)
+        progress_card.pack(fill=tk.X)
+        
+        # Add shadow
+        for i in range(3):
+            shade = tk.Frame(main_frame, bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}")
+            shade.place(x=i+2, y=i+2, relwidth=1, relheight=0.25)
+            shade.lower(progress_card)
+        
+        progress_inner = tk.Frame(progress_card, bg=self.COLOR_CARTA)
+        progress_inner.pack(fill=tk.X, padx=3, pady=15)
+        
+        # Status label
+        self.status_label = tk.Label(
+            progress_inner,
+            text="Iniciando proceso...",
+            font=("Segoe UI", 11, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_PRIMARIO,
+            anchor="w"
+        )
+        self.status_label.pack(fill=tk.X, padx=15, pady=(0, 10))
+        
+        # Progress bar frame with custom styling
+        progress_bar_frame = tk.Frame(progress_inner, bg="#E8E8E8", relief=tk.FLAT)
+        progress_bar_frame.pack(fill=tk.X, padx=15, pady=5)
+        progress_bar_frame.configure(height=20)
+        
+        # Custom progress canvas
+        self.progress_canvas = tk.Canvas(
+            progress_bar_frame,
+            bg="#E8E8E8",
+            highlightthickness=0,
+            relief=tk.FLAT,
+            height=20
+        )
+        self.progress_canvas.pack(fill=tk.X, padx=0, pady=0)
+        
+        # Progress fill rectangle
+        self.progress_fill = self.progress_canvas.create_rectangle(0, 0, 0, 20, fill=self.COLOR_SECUNDARIO, width=0)
+        self.progress_bg = self.progress_canvas.create_rectangle(0, 0, 1000, 20, fill="#E0E0E0", width=0)
+        
+        # Percentage label
+        self.percent_label = tk.Label(
+            progress_inner,
+            text="0%",
+            font=("Segoe UI", 10, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_SECUNDARIO
+        )
+        self.percent_label.pack(pady=(5, 0))
+        
+        # Log area card
+        log_card = tk.Frame(main_frame, bg=self.COLOR_CARTA, relief=tk.FLAT)
+        log_card.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
+        
+        # Add shadow to log card
+        for i in range(3):
+            shade = tk.Frame(main_frame, bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}")
+            shade.place(x=i+2, y=i+2+130, relwidth=1, relheight=0.5)
+            shade.lower(log_card)
+        
+        log_inner = tk.Frame(log_card, bg=self.COLOR_CARTA)
+        log_inner.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
+        
+        # Log header
+        log_header = tk.Frame(log_inner, bg=self.COLOR_CARTA)
+        log_header.pack(fill=tk.X, padx=15, pady=(10, 5))
+        
+        log_icon = tk.Label(
+            log_header,
+            text="📋",
+            font=("Segoe UI", 12),
+            bg=self.COLOR_CARTA
+        )
+        log_icon.pack(side=tk.LEFT)
+        
+        log_title = tk.Label(
+            log_header,
+            text="Registro de Actividad",
+            font=("Segoe UI", 10, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO
+        )
+        log_title.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Log text area
+        log_text_frame = tk.Frame(log_inner, bg="#F5F5F5", relief=tk.FLAT)
+        log_text_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 10))
+        
+        self.log_text = tk.Text(
+            log_text_frame,
+            font=("Consolas", 9),
+            bg="#F5F5F5",
+            fg=self.COLOR_TEXTO,
+            relief=tk.FLAT,
+            state=tk.DISABLED,
+            wrap=tk.WORD
+        )
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Scrollbar for log
+        scrollbar = tk.Scrollbar(log_text_frame, command=self.log_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.log_text.config(yscrollcommand=scrollbar.set)
+        
+        # Animation state
+        self.animating = True
+        self.animation_pos = 0
+        self.animate_progress()
+        
+        self.root.update()
+    
+    def animate_progress(self):
+        """Animate the progress bar"""
+        if not self.animating:
+            return
+        
+        self.animation_pos = (self.animation_pos + 2) % 100
+        
+        # Update progress bar visually
+        canvas_width = self.progress_canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 560  # Default width
+        
+        fill_width = int(canvas_width * (self.animation_pos / 100))
+        self.progress_canvas.coords(self.progress_fill, 0, 0, fill_width, 20)
+        
+        # Update percentage
+        self.percent_label.config(text=f"{self.animation_pos}%")
+        
+        # Schedule next animation frame
+        self.root.after(50, self.animate_progress)
+    
+    def set_progress(self, percent, status_text=""):
+        """Set progress percentage and status text"""
+        if status_text:
+            self.status_label.config(text=status_text)
+        
+        # Update progress bar
+        canvas_width = self.progress_canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 560
+        
+        fill_width = int(canvas_width * (percent / 100))
+        self.progress_canvas.coords(self.progress_fill, 0, 0, fill_width, 20)
+        self.percent_label.config(text=f"{percent}%")
+        
+        if percent >= 100:
+            self.percent_label.config(fg=self.COLOR_ACENTO)
         
         self.root.update()
     
@@ -345,20 +560,55 @@ class VentanaProgreso:
         """Agrega mensaje al log"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         
+        iconos = {
+            "INFO": "ℹ️",
+            "OK": "✅",
+            "WARN": "⚠️",
+            "ERROR": "❌",
+            "PROCESS": "🔄"
+        }
+        
         colores = {
             "INFO": "#3498DB",
             "OK": "#27AE60",
             "WARN": "#F39C12",
-            "ERROR": "#E74C3C"
+            "ERROR": "#E74C3C",
+            "PROCESS": "#9B59B6"
         }
         
+        icono = iconos.get(tipo, "ℹ️")
         color = colores.get(tipo, "#2C3E50")
+        
+        # Enable text widget
+        self.log_text.config(state=tk.NORMAL)
+        
+        # Insert timestamp and icon
+        self.log_text.insert(tk.END, f"[{timestamp}] ", "timestamp")
+        self.log_text.insert(tk.END, f"{icono} ", f"icon_{tipo}")
+        self.log_text.insert(tk.END, f"{mensaje}\n", "message")
+        
+        # Configure tags
+        self.log_text.tag_config("timestamp", foreground="#95A5A6", font=("Consolas", 9))
+        self.log_text.tag_config(f"icon_{tipo}", foreground=color, font=("Consolas", 9))
+        self.log_text.tag_config("message", foreground=self.COLOR_TEXTO, font=("Consolas", 9))
+        
+        # Scroll to bottom
+        self.log_text.see(tk.END)
+        self.log_text.config(state=tk.DISABLED)
+        
+        # Update status label with last message
+        if tipo == "ERROR":
+            self.status_label.config(text=f"❌ Error: {mensaje}", fg="#E74C3C")
+        elif tipo == "OK":
+            self.status_label.config(text=f"✅ {mensaje}", fg="#27AE60")
+        else:
+            self.status_label.config(text=mensaje, fg=self.COLOR_PRIMARIO)
         
         self.root.update()
     
     def cerrar(self):
         """Cierra la ventana"""
-        self.progress.stop()
+        self.animating = False
         self.root.destroy()
 
 class ProcesadorSemanal:
@@ -1201,16 +1451,12 @@ class ProcesadorSemanal:
             escribir_todo = False
             headers_finales = []
             
-            # Función auxiliar para normalizar valores clave
             def normalizar_clave(val):
                 if val is None: return ""
                 s = str(val).strip()
-                # Intentar normalizar fecha si es necesario
                 try:
-                    # Si es datetime de Excel
                     if isinstance(val, datetime):
                         return val.strftime('%m/%d/%Y')
-                    # Si es string
                     if '/' in s or '-' in s:
                         ts = pd.to_datetime(s, errors='coerce')
                         if not pd.isna(ts):
@@ -1218,6 +1464,15 @@ class ProcesadorSemanal:
                 except:
                     pass
                 return s
+
+            def ordenar_por_importador(df):
+                cols_orden = []
+                for col in ['IMPORTADOR', 'PROVEEDOR', 'MARCA', '# IMPORTACION']:
+                    if col in df.columns:
+                        cols_orden.append(col)
+                if not cols_orden:
+                    return df.fillna("")
+                return df.fillna("").sort_values(by=cols_orden, kind='mergesort', ignore_index=True)
 
             if filas_totales > 1:
                 self.log("Leyendo registros existentes...", "INFO")
@@ -1285,23 +1540,20 @@ class ProcesadorSemanal:
                     if duplicados_encontrados > 0:
                         self.log(f"♻️ Reemplazando {duplicados_encontrados} registros duplicados.", "OK")
                         
-                        # Crear DF solo con lo conservado para facilitar concat
-                        # Usamos dtype=object para evitar inferencias erróneas de pandas
-                        df_conservado = pd.DataFrame(rows_a_conservar, columns=headers)
+                        df_conservado = pd.DataFrame(rows_a_conservar, columns=headers, dtype=object)
+                        df_detalle_obj = df_detalle.astype(object)
+                        df_final_combinado = pd.concat([df_conservado, df_detalle_obj], ignore_index=True)
                         
-                        # Combinar: Conservados + Nuevos
-                        df_final_combinado = pd.concat([df_conservado, df_detalle], ignore_index=True)
-                        
-                        # Alinear columnas (mantener orden de Excel original, agregar nuevas al final)
                         cols_finales = list(headers)
                         for col in df_final_combinado.columns:
                             if col not in cols_finales:
                                 cols_finales.append(col)
                                 
-                        # Reordenar y rellenar faltantes
                         df_final_combinado = df_final_combinado.reindex(columns=cols_finales)
                         
-                        datos_a_escribir = df_final_combinado.fillna("").values.tolist()
+                        df_final_ordenado = ordenar_por_importador(df_final_combinado)
+                        
+                        datos_a_escribir = df_final_ordenado.values.tolist()
                         headers_finales = cols_finales
                         
                         # Configurar escritura completa
@@ -1309,14 +1561,16 @@ class ProcesadorSemanal:
                         start_row = 2
                     else:
                         self.log("No se encontraron duplicados. Agregando al final.", "INFO")
-                        datos_a_escribir = df_detalle.fillna("").values.tolist()
+                        df_tmp = ordenar_por_importador(df_detalle)
+                        datos_a_escribir = df_tmp.values.tolist()
                 else:
                     self.log(f"Faltan columnas clave en destino: {[c for c in cols_clave if c not in headers]}. Agregando al final.", "WARN")
-                    datos_a_escribir = df_detalle.fillna("").values.tolist()
+                    df_tmp = ordenar_por_importador(df_detalle)
+                    datos_a_escribir = df_tmp.values.tolist()
             else:
-                # Archivo vacío o nuevo
                 self.log("Archivo destino vacío o nuevo.", "INFO")
-                datos_a_escribir = df_detalle.fillna("").values.tolist()
+                df_tmp = ordenar_por_importador(df_detalle)
+                datos_a_escribir = df_tmp.values.tolist()
                 if filas_totales <= 1:
                      start_row = filas_totales + 1
 

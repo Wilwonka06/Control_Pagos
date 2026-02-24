@@ -165,39 +165,74 @@ class VentanaSeleccionTipo:
     def __init__(self):
         self.tipo_seleccionado = None
         
+        # Modern color palette
+        self.COLOR_PRIMARIO = "#2C3E50"
+        self.COLOR_SECUNDARIO = "#3498DB"
         self.COLOR_SEMANAL = "#3498DB"
-        self.COLOR_MENSUAL = "#3498DB"
+        self.COLOR_MENSUAL = "#9B59B6"
+        self.COLOR_ACENTO = "#27AE60"
         self.COLOR_FONDO = "#ECF0F1"
+        self.COLOR_CARTA = "#FFFFFF"
         self.COLOR_TEXTO = "#2C3E50"
+        self.COLOR_TEXTO_CLARO = "#7F8C8D"
+        self.COLOR_BORDE = "#BDC3C7"
         
     def crear_ventana(self):
         self.root = tk.Tk()
         aplicar_icono_ventana(self.root)
         self.root.title("Control de Pagos GCO - Selector")
-        self.root.geometry("600x450")
+        self.root.geometry("650x500")
         self.root.resizable(False, False)
         self.root.configure(bg=self.COLOR_FONDO)
         
         self.centrar_ventana()
         
-        # Header
-        header_frame = tk.Frame(self.root, bg="#2C3E50", height=100)
+        # Header with gradient effect
+        header_frame = tk.Frame(self.root, bg=self.COLOR_PRIMARIO, height=120)
         header_frame.pack(fill=tk.X)
         header_frame.pack_propagate(False)
         
-        title_label = tk.Label(
-            header_frame,
-            text="CONTROL DE PAGOS GCO",
-            font=("Segoe UI", 24, "bold"),
-            bg="#2C3E50",
+        # Header content
+        header_content = tk.Frame(header_frame, bg=self.COLOR_PRIMARIO)
+        header_content.place(relx=0.5, rely=0.5, anchor="center")
+        
+        # Logo/Icon
+        icon_label = tk.Label(
+            header_content,
+            text="💰",
+            font=("Segoe UI", 32),
+            bg=self.COLOR_PRIMARIO,
             fg="white"
         )
-        title_label.pack(expand=True)
+        icon_label.pack(side=tk.LEFT, padx=(0, 15))
         
-        # Contenido
+        # Title text
+        title_frame = tk.Frame(header_content, bg=self.COLOR_PRIMARIO)
+        title_frame.pack(side=tk.LEFT)
+        
+        title_label = tk.Label(
+            title_frame,
+            text="CONTROL DE PAGOS GCO",
+            font=("Segoe UI", 22, "bold"),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
+        )
+        title_label.pack(anchor="w")
+        
+        subtitle_label = tk.Label(
+            title_frame,
+            text="Sistema de Gestión de Importaciones",
+            font=("Segoe UI", 10),
+            bg=self.COLOR_PRIMARIO,
+            fg="#BDC3C7"
+        )
+        subtitle_label.pack(anchor="w")
+        
+        # Main content area
         content_frame = tk.Frame(self.root, bg=self.COLOR_FONDO)
-        content_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
+        # Selection prompt
         label_titulo = tk.Label(
             content_frame,
             text="Seleccione el tipo de proyección:",
@@ -205,68 +240,147 @@ class VentanaSeleccionTipo:
             bg=self.COLOR_FONDO,
             fg=self.COLOR_TEXTO
         )
-        label_titulo.pack(pady=(0, 30))
+        label_titulo.pack(pady=(0, 25))
         
-        # Frame para botones
-        buttons_frame = tk.Frame(content_frame, bg=self.COLOR_FONDO)
-        buttons_frame.pack(fill=tk.BOTH, expand=True)
+        # Card-based selection buttons
+        cards_frame = tk.Frame(content_frame, bg=self.COLOR_FONDO)
+        cards_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Botón Semanal
-        btn_semanal = tk.Button(
-            buttons_frame,
-            text="📅 PROYECCIÓN SEMANAL",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.COLOR_SEMANAL,
-            fg="white",
-            activebackground="#2980B9",
-            activeforeground="white",
-            relief=tk.FLAT,
-            cursor="hand2",
+        # Weekly Card
+        weekly_card = self.crear_card_seleccion(
+            cards_frame,
+            titulo="📅 PROYECCIÓN SEMANAL",
+            color=self.COLOR_SEMANAL,
             command=lambda: self.seleccionar_tipo("SEMANAL")
         )
-        btn_semanal.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        weekly_card.pack(fill=tk.X, pady=(0, 15))
         
-        btn_semanal.bind("<Enter>", lambda e: btn_semanal.configure(bg="#2980B9"))
-        btn_semanal.bind("<Leave>", lambda e: btn_semanal.configure(bg=self.COLOR_SEMANAL))
-        
-        # Botón Mensual
-        btn_mensual = tk.Button(
-            buttons_frame,
-            text="📊 PROYECCIÓN MENSUAL",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.COLOR_MENSUAL,
-            fg="white",
-            activebackground="#7D3C98",
-            activeforeground="white",
-            relief=tk.FLAT,
-            cursor="hand2",
+        # Monthly Card
+        monthly_card = self.crear_card_seleccion(
+            cards_frame,
+            titulo="📊 PROYECCIÓN MENSUAL",
+            color=self.COLOR_MENSUAL,
             command=lambda: self.seleccionar_tipo("MENSUAL")
         )
-        btn_mensual.pack(fill=tk.BOTH, expand=True)
+        monthly_card.pack(fill=tk.X, pady=(0, 15))
         
-        btn_mensual.bind("<Enter>", lambda e: btn_mensual.configure(bg="#7D3C98"))
-        btn_mensual.bind("<Leave>", lambda e: btn_mensual.configure(bg=self.COLOR_MENSUAL))
-        
-        # Footer con botón cancelar
+        # Footer with cancel button
         footer_frame = tk.Frame(self.root, bg=self.COLOR_FONDO)
         footer_frame.pack(fill=tk.X, padx=40, pady=(0, 20))
         
         btn_cancelar = tk.Button(
             footer_frame,
-            text="Cancelar",
+            text="✕ Cancelar",
             font=("Segoe UI", 10),
-            bg="#95A5A6",
-            fg="white",
-            activebackground="#7F8C8D",
+            bg="white",
+            fg=self.COLOR_TEXTO_CLARO,
+            activebackground="#E74C3C",
             activeforeground="white",
             relief=tk.FLAT,
+            borderwidth=2,
             cursor="hand2",
+            padx=25,
+            pady=8,
             command=self.cancelar
         )
         btn_cancelar.pack(side=tk.RIGHT)
         
+        # Hover effect for cancel button
+        def on_enter_cancel(e):
+            btn_cancelar.configure(bg="#E74C3C", fg="white")
+        def on_leave_cancel(e):
+            btn_cancelar.configure(bg="white", fg=self.COLOR_TEXTO_CLARO)
+        btn_cancelar.bind("<Enter>", on_enter_cancel)
+        btn_cancelar.bind("<Leave>", on_leave_cancel)
+        
         self.root.protocol("WM_DELETE_WINDOW", self.cancelar)
         self.root.mainloop()
+    
+    def crear_card_seleccion(self, parent, titulo, color, command):
+        """Creates a card-style selection button with hover effect"""
+        card_frame = tk.Frame(parent, bg=self.COLOR_CARTA, relief=tk.FLAT, borderwidth=0)
+        
+        # Add shadow effect (sombra debajo de la tarjeta)
+        for i in range(3):
+            shade = tk.Frame(
+                parent,
+                bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}"
+            )
+            shade.place(in_=card_frame, x=i+2, y=i+2, relwidth=1, relheight=1)
+            shade.lower(card_frame)
+        
+        # Main card content
+        card_inner = tk.Frame(card_frame, bg=self.COLOR_CARTA, cursor="hand2", relief=tk.FLAT)
+        card_inner.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
+        card_inner.pack_propagate(False)
+        card_inner.configure(height=80)
+        
+        # Left color accent bar
+        accent_bar = tk.Frame(card_inner, bg=color, width=6)
+        accent_bar.pack(side=tk.LEFT, fill=tk.Y)
+        
+        # Content
+        content = tk.Frame(card_inner, bg=self.COLOR_CARTA)
+        content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=15)
+        
+        title_label = tk.Label(
+            content,
+            text=titulo,
+            font=("Segoe UI", 13, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=color,
+            anchor="w"
+        )
+        title_label.pack(anchor="w")
+        
+        desc_label = tk.Label(
+            content,
+            font=("Segoe UI", 9),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO_CLARO,
+            anchor="w"
+        )
+        desc_label.pack(anchor="w", pady=(3, 0))
+        
+        # Arrow indicator
+        arrow_label = tk.Label(
+            card_inner,
+            text="➔",
+            font=("Segoe UI", 16),
+            bg=self.COLOR_CARTA,
+            fg=color
+        )
+        arrow_label.pack(side=tk.RIGHT, padx=20)
+        
+        # Bind click and hover events
+        card_inner.bind("<Button-1>", lambda e: command())
+        card_inner.bind("<Enter>", lambda e: self.on_card_hover(card_frame, card_inner, color, True))
+        card_inner.bind("<Leave>", lambda e: self.on_card_hover(card_frame, card_inner, color, False))
+        
+        # Bind to all children
+        for child in card_inner.winfo_children():
+            child.bind("<Button-1>", lambda e: command())
+            child.bind("<Enter>", lambda e, c=card_frame, ci=card_inner, col=color: self.on_card_hover(c, ci, col, True))
+            child.bind("<Leave>", lambda e, c=card_frame, ci=card_inner, col=color: self.on_card_hover(c, ci, col, False))
+        
+        return card_frame
+    
+    def on_card_hover(self, card_frame, card_inner, color, entering):
+        """Handle hover effect on cards"""
+        if entering:
+            card_inner.configure(bg="#F8F9FA")
+            for child in card_inner.winfo_children():
+                try:
+                    child.configure(bg="#F8F9FA")
+                except:
+                    pass
+        else:
+            card_inner.configure(bg=self.COLOR_CARTA)
+            for child in card_inner.winfo_children():
+                try:
+                    child.configure(bg=self.COLOR_CARTA)
+                except:
+                    pass
     
     def centrar_ventana(self):
         self.root.update_idletasks()
@@ -292,34 +406,202 @@ class VentanaProgreso:
         self.root = tk.Tk()
         aplicar_icono_ventana(self.root)
         self.root.title("Procesando...")
-        self.root.geometry("600x300")
+        self.root.geometry("650x400")
         self.root.resizable(False, False)
         self.root.configure(bg="#ECF0F1")
         
+        # Modern color palette
+        self.COLOR_PRIMARIO = "#2C3E50"
+        self.COLOR_SECUNDARIO = "#3498DB"
+        self.COLOR_ACENTO = "#27AE60"
+        self.COLOR_FONDO = "#ECF0F1"
+        self.COLOR_CARTA = "#FFFFFF"
+        self.COLOR_TEXTO = "#2C3E50"
+        self.COLOR_TEXTO_CLARO = "#7F8C8D"
+        
         self.centrar_ventana()
         
-        # Frame principal
-        main_frame = tk.Frame(self.root, bg="#ECF0F1")
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        # Header
+        header_frame = tk.Frame(self.root, bg=self.COLOR_PRIMARIO, height=70)
+        header_frame.pack(fill=tk.X)
+        header_frame.pack_propagate(False)
         
-        # Título
-        titulo = tk.Label(
-            main_frame,
-            text="⚙️ Procesando Control de Pagos",
-            font=("Segoe UI", 16, "bold"),
-            bg="#ECF0F1",
-            fg="#2C3E50"
-        )
-        titulo.pack(pady=(0, 20))
+        header_content = tk.Frame(header_frame, bg=self.COLOR_PRIMARIO)
+        header_content.place(relx=0.5, rely=0.5, anchor="center")
         
-        # Barra de progreso
-        self.progress = ttk.Progressbar(
-            main_frame,
-            mode='indeterminate',
-            length=560
+        icon_label = tk.Label(
+            header_content,
+            text="⚙️",
+            font=("Segoe UI", 20),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
         )
-        self.progress.pack(pady=(10, 0))
-        self.progress.start(10)
+        icon_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+        title_label = tk.Label(
+            header_content,
+            text="Procesando Control de Pagos",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
+        )
+        title_label.pack(side=tk.LEFT)
+        
+        # Main content frame
+        main_frame = tk.Frame(self.root, bg=self.COLOR_FONDO)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Progress card
+        progress_card = tk.Frame(main_frame, bg=self.COLOR_CARTA, relief=tk.FLAT)
+        progress_card.pack(fill=tk.X)
+        
+        # Add shadow
+        for i in range(3):
+            shade = tk.Frame(main_frame, bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}")
+            shade.place(x=i+2, y=i+2, relwidth=1, relheight=0.25)
+            shade.lower(progress_card)
+        
+        progress_inner = tk.Frame(progress_card, bg=self.COLOR_CARTA)
+        progress_inner.pack(fill=tk.X, padx=3, pady=15)
+        
+        # Status label
+        self.status_label = tk.Label(
+            progress_inner,
+            text="Iniciando proceso...",
+            font=("Segoe UI", 11, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_PRIMARIO,
+            anchor="w"
+        )
+        self.status_label.pack(fill=tk.X, padx=15, pady=(0, 10))
+        
+        # Progress bar frame with custom styling
+        progress_bar_frame = tk.Frame(progress_inner, bg="#E8E8E8", relief=tk.FLAT)
+        progress_bar_frame.pack(fill=tk.X, padx=15, pady=5)
+        progress_bar_frame.configure(height=20)
+        
+        # Custom progress canvas
+        self.progress_canvas = tk.Canvas(
+            progress_bar_frame,
+            bg="#E8E8E8",
+            highlightthickness=0,
+            relief=tk.FLAT,
+            height=20
+        )
+        self.progress_canvas.pack(fill=tk.X, padx=0, pady=0)
+        
+        # Progress fill rectangle
+        self.progress_fill = self.progress_canvas.create_rectangle(0, 0, 0, 20, fill=self.COLOR_SECUNDARIO, width=0)
+        self.progress_bg = self.progress_canvas.create_rectangle(0, 0, 1000, 20, fill="#E0E0E0", width=0)
+        
+        # Percentage label
+        self.percent_label = tk.Label(
+            progress_inner,
+            text="0%",
+            font=("Segoe UI", 10, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_SECUNDARIO
+        )
+        self.percent_label.pack(pady=(5, 0))
+        
+        # Log area card
+        log_card = tk.Frame(main_frame, bg=self.COLOR_CARTA, relief=tk.FLAT)
+        log_card.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
+        
+        # Add shadow to log card
+        for i in range(3):
+            shade = tk.Frame(main_frame, bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}")
+            shade.place(x=i+2, y=i+2+130, relwidth=1, relheight=0.5)
+            shade.lower(log_card)
+        
+        log_inner = tk.Frame(log_card, bg=self.COLOR_CARTA)
+        log_inner.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
+        
+        # Log header
+        log_header = tk.Frame(log_inner, bg=self.COLOR_CARTA)
+        log_header.pack(fill=tk.X, padx=15, pady=(10, 5))
+        
+        log_icon = tk.Label(
+            log_header,
+            text="📋",
+            font=("Segoe UI", 12),
+            bg=self.COLOR_CARTA
+        )
+        log_icon.pack(side=tk.LEFT)
+        
+        log_title = tk.Label(
+            log_header,
+            text="Registro de Actividad",
+            font=("Segoe UI", 10, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO
+        )
+        log_title.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Log text area
+        log_text_frame = tk.Frame(log_inner, bg="#F5F5F5", relief=tk.FLAT)
+        log_text_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 10))
+        
+        self.log_text = tk.Text(
+            log_text_frame,
+            font=("Consolas", 9),
+            bg="#F5F5F5",
+            fg=self.COLOR_TEXTO,
+            relief=tk.FLAT,
+            state=tk.DISABLED,
+            wrap=tk.WORD
+        )
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Scrollbar for log
+        scrollbar = tk.Scrollbar(log_text_frame, command=self.log_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.log_text.config(yscrollcommand=scrollbar.set)
+        
+        # Animation state
+        self.animating = True
+        self.animation_pos = 0
+        self.animate_progress()
+        
+        self.root.update()
+    
+    def animate_progress(self):
+        """Animate the progress bar"""
+        if not self.animating:
+            return
+        
+        self.animation_pos = (self.animation_pos + 2) % 100
+        
+        # Update progress bar visually
+        canvas_width = self.progress_canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 560  # Default width
+        
+        fill_width = int(canvas_width * (self.animation_pos / 100))
+        self.progress_canvas.coords(self.progress_fill, 0, 0, fill_width, 20)
+        
+        # Update percentage
+        self.percent_label.config(text=f"{self.animation_pos}%")
+        
+        # Schedule next animation frame
+        self.root.after(50, self.animate_progress)
+    
+    def set_progress(self, percent, status_text=""):
+        """Set progress percentage and status text"""
+        if status_text:
+            self.status_label.config(text=status_text)
+        
+        # Update progress bar
+        canvas_width = self.progress_canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 560
+        
+        fill_width = int(canvas_width * (percent / 100))
+        self.progress_canvas.coords(self.progress_fill, 0, 0, fill_width, 20)
+        self.percent_label.config(text=f"{percent}%")
+        
+        if percent >= 100:
+            self.percent_label.config(fg=self.COLOR_ACENTO)
         
         self.root.update()
     
@@ -333,11 +615,57 @@ class VentanaProgreso:
     
     def log(self, mensaje, tipo="INFO"):
         """Agrega mensaje al log"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        iconos = {
+            "INFO": "ℹ️",
+            "OK": "✅",
+            "WARN": "⚠️",
+            "ERROR": "❌",
+            "PROCESS": "🔄"
+        }
+        
+        colores = {
+            "INFO": "#3498DB",
+            "OK": "#27AE60",
+            "WARN": "#F39C12",
+            "ERROR": "#E74C3C",
+            "PROCESS": "#9B59B6"
+        }
+        
+        icono = iconos.get(tipo, "ℹ️")
+        color = colores.get(tipo, "#2C3E50")
+        
+        # Enable text widget
+        self.log_text.config(state=tk.NORMAL)
+        
+        # Insert timestamp and icon
+        self.log_text.insert(tk.END, f"[{timestamp}] ", "timestamp")
+        self.log_text.insert(tk.END, f"{icono} ", f"icon_{tipo}")
+        self.log_text.insert(tk.END, f"{mensaje}\n", "message")
+        
+        # Configure tags
+        self.log_text.tag_config("timestamp", foreground="#95A5A6", font=("Consolas", 9))
+        self.log_text.tag_config(f"icon_{tipo}", foreground=color, font=("Consolas", 9))
+        self.log_text.tag_config("message", foreground=self.COLOR_TEXTO, font=("Consolas", 9))
+        
+        # Scroll to bottom
+        self.log_text.see(tk.END)
+        self.log_text.config(state=tk.DISABLED)
+        
+        # Update status label with last message
+        if tipo == "ERROR":
+            self.status_label.config(text=f"❌ Error: {mensaje}", fg="#E74C3C")
+        elif tipo == "OK":
+            self.status_label.config(text=f"✅ {mensaje}", fg="#27AE60")
+        else:
+            self.status_label.config(text=mensaje, fg=self.COLOR_PRIMARIO)
+        
         self.root.update()
     
     def cerrar(self):
         """Cierra la ventana"""
-        self.progress.stop()
+        self.animating = False
         self.root.destroy()
 
 

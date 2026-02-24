@@ -38,17 +38,20 @@ class InterfazMensual:
         self.fecha_seleccionada = None
         self.ejecutar_proceso = False
         
-        self.COLOR_PRIMARIO = "#3498DB" # Morado para diferenciar del semanal
+        # Modern color palette - Purple theme for monthly
+        self.COLOR_PRIMARIO = "#8E44AD"
         self.COLOR_SECUNDARIO = "#9B59B6"
         self.COLOR_ACENTO = "#2ECC71"
         self.COLOR_FONDO = "#ECF0F1"
+        self.COLOR_CARTA = "#FFFFFF"
         self.COLOR_TEXTO = "#2C3E50"
+        self.COLOR_TEXTO_CLARO = "#7F8C8D"
         
     def crear_ventana(self):
         self.root = tk.Tk()
         aplicar_icono_ventana(self.root)
-        self.root.title("Control de Pagos Mensual")
-        self.root.geometry("700x600")
+        self.root.title("Control de Pagos GCO - Proyección Mensual")
+        self.root.geometry("750x630")
         self.root.resizable(False, False)
         self.root.configure(bg=self.COLOR_FONDO)
         
@@ -67,9 +70,28 @@ class InterfazMensual:
     def configurar_estilos(self):
         style = ttk.Style()
         style.theme_use('clam')
+        
+        # Style for combobox
+        style.configure(
+            "Modern.TCombobox",
+            fieldbackground=self.COLOR_CARTA,
+            background=self.COLOR_SECUNDARIO,
+            foreground=self.COLOR_TEXTO,
+            lightcolor=self.COLOR_SECUNDARIO,
+            darkcolor=self.COLOR_SECUNDARIO,
+            arrowcolor=self.COLOR_SECUNDARIO,
+            font=("Segoe UI", 11)
+        )
+        
+        style.map(
+            "Modern.TCombobox",
+            fieldbackground=[("readonly", self.COLOR_CARTA)],
+            background=[("readonly", self.COLOR_SECUNDARIO)],
+            foreground=[("readonly", self.COLOR_TEXTO)]
+        )
     
     def crear_header(self, parent):
-        header_frame = tk.Frame(parent, bg=self.COLOR_PRIMARIO, height=140)
+        header_frame = tk.Frame(parent, bg=self.COLOR_PRIMARIO, height=120)
         header_frame.pack(fill=tk.X, pady=0)
         header_frame.pack_propagate(False)
         
@@ -78,8 +100,8 @@ class InterfazMensual:
         
         icon_label = tk.Label(
             content,
-            text="📅",
-            font=("Segoe UI", 30),
+            text="📊",
+            font=("Segoe UI", 28),
             bg=self.COLOR_PRIMARIO,
             fg="white"
         )
@@ -102,30 +124,43 @@ class InterfazMensual:
             text="Generación de reporte completo del mes",
             font=("Segoe UI", 11),
             bg=self.COLOR_PRIMARIO,
-            fg="#E8DAEF"
+            fg="#D7BDE2"
         )
         subtitulo.pack(anchor="w")
     
     def crear_contenido(self, parent):
         content_frame = tk.Frame(parent, bg=self.COLOR_FONDO)
-        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=25)
         
-        card_frame = tk.Frame(content_frame, bg="white", relief=tk.FLAT, borderwidth=0)
+        # Card frame with shadow
+        card_frame = tk.Frame(content_frame, bg=self.COLOR_CARTA, relief=tk.FLAT, borderwidth=0)
         card_frame.pack(fill=tk.BOTH, expand=True)
         
         self.agregar_sombra(card_frame)
         
-        inner_frame = tk.Frame(card_frame, bg="white")
-        inner_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
+        inner_frame = tk.Frame(card_frame, bg=self.COLOR_CARTA)
+        inner_frame.pack(fill=tk.BOTH, expand=True, padx=25, pady=25)
         
-        section_title = tk.Label(
-            inner_frame,
+        # Section title
+        section_title = tk.Frame(inner_frame, bg=self.COLOR_CARTA)
+        section_title.pack(fill=tk.X, pady=(0, 5))
+        
+        icon_section = tk.Label(
+            section_title,
+            text="📆",
+            font=("Segoe UI", 16),
+            bg=self.COLOR_CARTA
+        )
+        icon_section.pack(side=tk.LEFT)
+        
+        title_text = tk.Label(
+            section_title,
             text="Selección de Mes",
             font=("Segoe UI", 14, "bold"),
-            bg="white",
+            bg=self.COLOR_CARTA,
             fg=self.COLOR_PRIMARIO
         )
-        section_title.pack(pady=(0, 5))
+        title_text.pack(side=tk.LEFT, padx=(8, 0))
         
         separator = tk.Frame(inner_frame, height=2, bg=self.COLOR_SECUNDARIO)
         separator.pack(fill=tk.X, pady=(0, 20))
@@ -134,45 +169,130 @@ class InterfazMensual:
             inner_frame,
             text="Selecciona el Mes y Año que deseas procesar.",
             font=("Segoe UI", 10),
-            bg="white",
-            fg="#7F8C8D",
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO_CLARO,
             justify=tk.CENTER
         )
         desc_label.pack(pady=(0, 25))
         
-        cal_frame = tk.Frame(inner_frame, bg="white")
-        cal_frame.pack(pady=10)
+        # Selection container
+        selection_frame = tk.Frame(inner_frame, bg=self.COLOR_CARTA)
+        selection_frame.pack(pady=15)
         
-        # Selectores Mes / Año
+        # Month selection card
+        month_card = tk.Frame(selection_frame, bg="#F5EEF8", relief=tk.FLAT, borderwidth=1)
+        month_card.pack(side=tk.LEFT, padx=10)
+        
+        month_inner = tk.Frame(month_card, bg="#F5EEF8")
+        month_inner.pack(padx=20, pady=15)
+        
+        month_icon = tk.Label(
+            month_inner,
+            text="🗓️",
+            font=("Segoe UI", 20),
+            bg="#F5EEF8"
+        )
+        month_icon.pack()
+        
+        month_label = tk.Label(
+            month_inner,
+            text="Mes",
+            font=("Segoe UI", 10, "bold"),
+            bg="#F5EEF8",
+            fg=self.COLOR_PRIMARIO
+        )
+        month_label.pack(pady=(5, 5))
+        
         meses = [
             "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
         ]
         
-        # Frame Mes
-        frame_mes = tk.Frame(cal_frame, bg="white")
-        frame_mes.pack(side=tk.LEFT, padx=10)
-        tk.Label(frame_mes, text="Mes:", bg="white", font=("Segoe UI", 10)).pack(anchor="w")
-        self.combo_mes = ttk.Combobox(frame_mes, values=meses, state="readonly", width=15, font=("Segoe UI", 11))
-        self.combo_mes.pack(pady=(5,0))
-        # Seleccionar mes actual
+        self.combo_mes = ttk.Combobox(
+            month_inner,
+            values=meses,
+            state="readonly",
+            width=15,
+            font=("Segoe UI", 11),
+            style="Modern.TCombobox"
+        )
+        self.combo_mes.pack(pady=(0, 0))
+        # Select current month
         self.combo_mes.current(datetime.now().month - 1)
-
-        # Frame Año
-        frame_anio = tk.Frame(cal_frame, bg="white")
-        frame_anio.pack(side=tk.LEFT, padx=10)
+        
+        # Year selection card
+        year_card = tk.Frame(selection_frame, bg="#EBF5FB", relief=tk.FLAT, borderwidth=1)
+        year_card.pack(side=tk.LEFT, padx=10)
+        
+        year_inner = tk.Frame(year_card, bg="#EBF5FB")
+        year_inner.pack(padx=20, pady=15)
+        
+        year_icon = tk.Label(
+            year_inner,
+            text="📅",
+            font=("Segoe UI", 20),
+            bg="#EBF5FB"
+        )
+        year_icon.pack()
+        
+        year_label = tk.Label(
+            year_inner,
+            text="Año",
+            font=("Segoe UI", 10, "bold"),
+            bg="#EBF5FB",
+            fg=self.COLOR_PRIMARIO
+        )
+        year_label.pack(pady=(5, 5))
         
         anio_actual = datetime.now().year
         anios = [str(a) for a in range(anio_actual - 2, anio_actual + 5)]
         
-        tk.Label(frame_anio, text="Año:", bg="white", font=("Segoe UI", 10)).pack(anchor="w")
-        self.combo_anio = ttk.Combobox(frame_anio, values=anios, state="readonly", width=10, font=("Segoe UI", 11))
-        self.combo_anio.pack(pady=(5,0))
+        self.combo_anio = ttk.Combobox(
+            year_inner,
+            values=anios,
+            state="readonly",
+            width=10,
+            font=("Segoe UI", 11),
+            style="Modern.TCombobox"
+        )
+        self.combo_anio.pack(pady=(0, 0))
         self.combo_anio.set(str(anio_actual))
+        
+        # Info frame
+        info_frame = tk.Frame(inner_frame, bg="#E8F8F5")
+        info_frame.pack(fill=tk.X, pady=(15, 0))
+        
+        info_icon = tk.Label(
+            info_frame,
+            text="💡",
+            font=("Segoe UI", 12),
+            bg="#E8F8F5"
+        )
+        info_icon.pack(side=tk.LEFT, padx=(10, 5), pady=8)
+        
+        mes_nombre = meses[datetime.now().month - 1]
+        info_text = tk.Label(
+            info_frame,
+            text=f"Mes seleccionado: {mes_nombre} {anio_actual}",
+            font=("Segoe UI", 9, "italic"),
+            bg="#E8F8F5",
+            fg="#1D8348"
+        )
+        info_text.pack(side=tk.LEFT, pady=8)
+        
+        # Update info on selection
+        def update_info(event=None):
+            mes_idx = self.combo_mes.current()
+            anio = self.combo_anio.get()
+            if mes_idx >= 0:
+                info_text.config(text=f"Mes seleccionado: {meses[mes_idx]} {anio}")
+        
+        self.combo_mes.bind("<<ComboboxSelected>>", update_info)
+        self.combo_anio.bind("<<ComboboxSelected>>", update_info)
     
     def crear_footer(self, parent):
         footer_frame = tk.Frame(parent, bg=self.COLOR_FONDO, height=80)
-        footer_frame.pack(fill=tk.X, pady=(0, 20))
+        footer_frame.pack(fill=tk.X, pady=(0, 15))
         footer_frame.pack_propagate(False)
         
         button_frame = tk.Frame(footer_frame, bg=self.COLOR_FONDO)
@@ -180,11 +300,11 @@ class InterfazMensual:
         
         btn_cancelar = tk.Button(
             button_frame,
-            text="Cancelar",
+            text="✕ Cancelar",
             command=self.cancelar,
             font=("Segoe UI", 11),
-            bg="white",
-            fg=self.COLOR_TEXTO,
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO_CLARO,
             relief=tk.FLAT,
             borderwidth=2,
             padx=30,
@@ -207,6 +327,24 @@ class InterfazMensual:
             cursor="hand2"
         )
         btn_continuar.pack(side=tk.LEFT, padx=10)
+        
+        # Hover effects
+        def on_enter_cancelar(e):
+            btn_cancelar.configure(bg="#E74C3C", fg="white")
+        
+        def on_leave_cancelar(e):
+            btn_cancelar.configure(bg=self.COLOR_CARTA, fg=self.COLOR_TEXTO_CLARO)
+        
+        def on_enter_continuar(e):
+            btn_continuar.configure(bg="#229954")
+        
+        def on_leave_continuar(e):
+            btn_continuar.configure(bg=self.COLOR_ACENTO)
+        
+        btn_cancelar.bind("<Enter>", on_enter_cancelar)
+        btn_cancelar.bind("<Leave>", on_leave_cancelar)
+        btn_continuar.bind("<Enter>", on_enter_continuar)
+        btn_continuar.bind("<Leave>", on_leave_continuar)
     
     def agregar_sombra(self, widget):
         for i in range(3):
@@ -244,26 +382,203 @@ class VentanaProgreso:
         self.root = tk.Tk()
         aplicar_icono_ventana(self.root)
         self.root.title("Procesando...")
-        self.root.geometry("600x300")
+        self.root.geometry("650x400")
         self.root.resizable(False, False)
         self.root.configure(bg="#ECF0F1")
+        
+        # Modern color palette - Purple theme for monthly
+        self.COLOR_PRIMARIO = "#8E44AD"
+        self.COLOR_SECUNDARIO = "#9B59B6"
+        self.COLOR_ACENTO = "#27AE60"
+        self.COLOR_FONDO = "#ECF0F1"
+        self.COLOR_CARTA = "#FFFFFF"
+        self.COLOR_TEXTO = "#2C3E50"
+        self.COLOR_TEXTO_CLARO = "#7F8C8D"
+        
         self.centrar_ventana()
         
-        main_frame = tk.Frame(self.root, bg="#ECF0F1")
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        # Header
+        header_frame = tk.Frame(self.root, bg=self.COLOR_PRIMARIO, height=70)
+        header_frame.pack(fill=tk.X)
+        header_frame.pack_propagate(False)
         
-        titulo = tk.Label(
-            main_frame,
-            text="⚙️ Generando Proyección Mensual",
-            font=("Segoe UI", 16, "bold"),
-            bg="#ECF0F1",
-            fg="#2C3E50"
+        header_content = tk.Frame(header_frame, bg=self.COLOR_PRIMARIO)
+        header_content.place(relx=0.5, rely=0.5, anchor="center")
+        
+        icon_label = tk.Label(
+            header_content,
+            text="⚙️",
+            font=("Segoe UI", 20),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
         )
-        titulo.pack(pady=(0, 20))
+        icon_label.pack(side=tk.LEFT, padx=(0, 10))
         
-        self.progress = ttk.Progressbar(main_frame, mode='indeterminate', length=560)
-        self.progress.pack(pady=(10, 0))
-        self.progress.start(10)
+        title_label = tk.Label(
+            header_content,
+            text="Generando Proyección Mensual",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.COLOR_PRIMARIO,
+            fg="white"
+        )
+        title_label.pack(side=tk.LEFT)
+        
+        # Main content frame
+        main_frame = tk.Frame(self.root, bg=self.COLOR_FONDO)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Progress card
+        progress_card = tk.Frame(main_frame, bg=self.COLOR_CARTA, relief=tk.FLAT)
+        progress_card.pack(fill=tk.X)
+        
+        # Add shadow
+        for i in range(3):
+            shade = tk.Frame(main_frame, bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}")
+            shade.place(x=i+2, y=i+2, relwidth=1, relheight=0.25)
+            shade.lower(progress_card)
+        
+        progress_inner = tk.Frame(progress_card, bg=self.COLOR_CARTA)
+        progress_inner.pack(fill=tk.X, padx=3, pady=15)
+        
+        # Status label
+        self.status_label = tk.Label(
+            progress_inner,
+            text="Iniciando proceso...",
+            font=("Segoe UI", 11, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_PRIMARIO,
+            anchor="w"
+        )
+        self.status_label.pack(fill=tk.X, padx=15, pady=(0, 10))
+        
+        # Progress bar frame with custom styling
+        progress_bar_frame = tk.Frame(progress_inner, bg="#E8E8E8", relief=tk.FLAT)
+        progress_bar_frame.pack(fill=tk.X, padx=15, pady=5)
+        progress_bar_frame.configure(height=20)
+        
+        # Custom progress canvas
+        self.progress_canvas = tk.Canvas(
+            progress_bar_frame,
+            bg="#E8E8E8",
+            highlightthickness=0,
+            relief=tk.FLAT,
+            height=20
+        )
+        self.progress_canvas.pack(fill=tk.X, padx=0, pady=0)
+        
+        # Progress fill rectangle
+        self.progress_fill = self.progress_canvas.create_rectangle(0, 0, 0, 20, fill=self.COLOR_SECUNDARIO, width=0)
+        self.progress_bg = self.progress_canvas.create_rectangle(0, 0, 1000, 20, fill="#E0E0E0", width=0)
+        
+        # Percentage label
+        self.percent_label = tk.Label(
+            progress_inner,
+            text="0%",
+            font=("Segoe UI", 10, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_SECUNDARIO
+        )
+        self.percent_label.pack(pady=(5, 0))
+        
+        # Log area card
+        log_card = tk.Frame(main_frame, bg=self.COLOR_CARTA, relief=tk.FLAT)
+        log_card.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
+        
+        # Add shadow to log card
+        for i in range(3):
+            shade = tk.Frame(main_frame, bg=f"#{230-i*10:02x}{230-i*10:02x}{230-i*10:02x}")
+            shade.place(x=i+2, y=i+2+130, relwidth=1, relheight=0.5)
+            shade.lower(log_card)
+        
+        log_inner = tk.Frame(log_card, bg=self.COLOR_CARTA)
+        log_inner.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
+        
+        # Log header
+        log_header = tk.Frame(log_inner, bg=self.COLOR_CARTA)
+        log_header.pack(fill=tk.X, padx=15, pady=(10, 5))
+        
+        log_icon = tk.Label(
+            log_header,
+            text="📋",
+            font=("Segoe UI", 12),
+            bg=self.COLOR_CARTA
+        )
+        log_icon.pack(side=tk.LEFT)
+        
+        log_title = tk.Label(
+            log_header,
+            text="Registro de Actividad",
+            font=("Segoe UI", 10, "bold"),
+            bg=self.COLOR_CARTA,
+            fg=self.COLOR_TEXTO
+        )
+        log_title.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Log text area
+        log_text_frame = tk.Frame(log_inner, bg="#F5F5F5", relief=tk.FLAT)
+        log_text_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 10))
+        
+        self.log_text = tk.Text(
+            log_text_frame,
+            font=("Consolas", 9),
+            bg="#F5F5F5",
+            fg=self.COLOR_TEXTO,
+            relief=tk.FLAT,
+            state=tk.DISABLED,
+            wrap=tk.WORD
+        )
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Scrollbar for log
+        scrollbar = tk.Scrollbar(log_text_frame, command=self.log_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.log_text.config(yscrollcommand=scrollbar.set)
+        
+        # Animation state
+        self.animating = True
+        self.animation_pos = 0
+        self.animate_progress()
+        
+        self.root.update()
+    
+    def animate_progress(self):
+        """Animate the progress bar"""
+        if not self.animating:
+            return
+        
+        self.animation_pos = (self.animation_pos + 2) % 100
+        
+        # Update progress bar visually
+        canvas_width = self.progress_canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 560  # Default width
+        
+        fill_width = int(canvas_width * (self.animation_pos / 100))
+        self.progress_canvas.coords(self.progress_fill, 0, 0, fill_width, 20)
+        
+        # Update percentage
+        self.percent_label.config(text=f"{self.animation_pos}%")
+        
+        # Schedule next animation frame
+        self.root.after(50, self.animate_progress)
+    
+    def set_progress(self, percent, status_text=""):
+        """Set progress percentage and status text"""
+        if status_text:
+            self.status_label.config(text=status_text)
+        
+        # Update progress bar
+        canvas_width = self.progress_canvas.winfo_width()
+        if canvas_width < 10:
+            canvas_width = 560
+        
+        fill_width = int(canvas_width * (percent / 100))
+        self.progress_canvas.coords(self.progress_fill, 0, 0, fill_width, 20)
+        self.percent_label.config(text=f"{percent}%")
+        
+        if percent >= 100:
+            self.percent_label.config(fg=self.COLOR_ACENTO)
+        
         self.root.update()
     
     def centrar_ventana(self):
@@ -276,13 +591,62 @@ class VentanaProgreso:
     
     def log(self, mensaje, tipo="INFO"):
         try:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            
+            iconos = {
+                "INFO": "ℹ️",
+                "OK": "✅",
+                "WARN": "⚠️",
+                "ERROR": "❌",
+                "PROCESS": "🔄"
+            }
+            
+            colores = {
+                "INFO": "#3498DB",
+                "OK": "#27AE60",
+                "WARN": "#F39C12",
+                "ERROR": "#E74C3C",
+                "PROCESS": "#9B59B6"
+            }
+            
+            icono = iconos.get(tipo, "ℹ️")
+            color = colores.get(tipo, "#2C3E50")
+            
+            # Print to console
             print(f"[{tipo}] {mensaje}")
-        except:
-            pass
+            
+            # Enable text widget
+            self.log_text.config(state=tk.NORMAL)
+            
+            # Insert timestamp and icon
+            self.log_text.insert(tk.END, f"[{timestamp}] ", "timestamp")
+            self.log_text.insert(tk.END, f"{icono} ", f"icon_{tipo}")
+            self.log_text.insert(tk.END, f"{mensaje}\n", "message")
+            
+            # Configure tags
+            self.log_text.tag_config("timestamp", foreground="#95A5A6", font=("Consolas", 9))
+            self.log_text.tag_config(f"icon_{tipo}", foreground=color, font=("Consolas", 9))
+            self.log_text.tag_config("message", foreground=self.COLOR_TEXTO, font=("Consolas", 9))
+            
+            # Scroll to bottom
+            self.log_text.see(tk.END)
+            self.log_text.config(state=tk.DISABLED)
+            
+            # Update status label with last message
+            if tipo == "ERROR":
+                self.status_label.config(text=f"❌ Error: {mensaje}", fg="#E74C3C")
+            elif tipo == "OK":
+                self.status_label.config(text=f"✅ {mensaje}", fg="#27AE60")
+            else:
+                self.status_label.config(text=mensaje, fg=self.COLOR_PRIMARIO)
+            
+        except Exception as e:
+            print(f"Error logging: {e}")
+        
         self.root.update()
     
     def cerrar(self):
-        self.progress.stop()
+        self.animating = False
         self.root.destroy()
 
 class ProcesadorMensual:
