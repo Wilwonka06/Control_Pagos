@@ -333,38 +333,147 @@ class ProcesadorSemanal:
         return pd.DataFrame(filas)
     
     def guardar_proyeccion_com(self, ruta, df, nombre):
+        self.log("Guardando proyección con tabla resumen...", "INFO")
         pythoncom.CoInitialize()
-        excel = win32com.DispatchEx("Excel.Application")
-        wb = excel.Workbooks.Open(str(ruta.absolute()))
-        ws = wb.Sheets.Add(); ws.Name = nombre
-        
-        headers = ['IMPORTADOR', 'MARCA', 'PROVEEDOR', 'NRO. IMPO', 'VALOR A PAGAR', 'MONEDA', 'NOTA CRÉDITO']
-        for i, h in enumerate(headers, 1):
-            c = ws.Cells(1, i); c.Value = h; c.Font.Bold = True; c.Font.Color = 0xFFFFFF; c.Interior.Color = 0x993366
+        excel = None
+        wb = None
+        try:
+            excel = win32com.DispatchEx("Excel.Application")
+            excel.Visible = False
+            excel.DisplayAlerts = False
+
+            wb = excel.Workbooks.Open(str(ruta.absolute()))
+            ws = wb.Sheets.Add()
+            ws.Name = nombre
             
-        f_act = 2
-        for _, row in df.iterrows():
-            t = row.get('_TIPO', 'DETALLE')
-            if t == 'BLANCO': f_act += 1; continue
-            if t == 'SUBTOTAL':
-                ws.Cells(f_act, 5).Formula = row['VALOR A PAGAR']
-                ws.Cells(f_act, 6).Value = row['MONEDA']
-                ws.Range(ws.Cells(f_act, 5), ws.Cells(f_act, 6)).Interior.Color = 0xCCFFCC
-            else:
-                for i, col in enumerate(headers, 1):
-                    val = row.get(col, '')
-                    if col in ['VALOR A PAGAR', 'NOTA CRÉDITO']:
-                        ws.Cells(f_act, i).Value = float(val) if val and not str(val).startswith('=') else val
-                    else: ws.Cells(f_act, i).Value = str(val)
-                if t == 'DETALLE_UNICO': ws.Range(ws.Cells(f_act, 5), ws.Cells(f_act, 6)).Interior.Color = 0xCCFFCC
+            headers = ['IMPORTADOR', 'MARCA', 'PROVEEDOR', 'NRO. IMPO', 'VALOR A PAGAR', 'MONEDA', 'NOTA CRÉDITO']
+            for i, h in enumerate(headers, 1):
+                c = ws.Cells(1, i)
+                c.Value = h
+                c.Font.Bold = True
+                c.Font.Color = 0xFFFFFF
+                c.Interior.Color = 0x993366
+                c.HorizontalAlignment = -4108  # xlCenter
+                
+            f_act = 2
+            filas_blanco = []
+            for _, row in df.iterrows():
+                t = row.get('_TIPO', 'DETALLE')
+                if t == 'BLANCO':
+                    filas_blanco.append(f_act)
+                    f_act += 1
+                    continue
+                if t == 'SUBTOTAL':
+                    ws.Cells(f_act, 5).Formula = row['VALOR A PAGAR']
+                    ws.Cells(f_act, 6).Value = row['MONEDA']
+                    ws.Range(ws.Cells(f_act, 5), ws.Cells(f_act, 6)).Interior.Color = 0xCCFFCC
+                    ws.Range(ws.Cells(f_act, 5), ws.Cells(f_act, 6)).Font.Bold = True
+                else:
+                    for i, col in enumerate(headers, 1):
+                        val = row.get(col, '')
+                        if col in ['VALOR A PAGAR', 'NOTA CRÉDITO']:
+                            ws.Cells(f_act, i).Value = float(val) if val and not str(val).startswith('=') else val
+                        else:
+                            ws.Cells(f_act, i).Value = str(val)
+                    if t == 'DETALLE_UNICO':
+                        ws.Range(ws.Cells(f_act, 5), ws.Cells(f_act, 6)).Interior.Color = 0xCCFFCC
+                        ws.Range(ws.Cells(f_act, 5), ws.Cells(f_act, 6)).Font.Bold = True
+                ws.Cells(f_act, 5).NumberFormat = "$ #,##0.00"
+                ws.Cells(f_act, 7).NumberFormat = "$ #,##0.00"
+                f_act += 1
+
+            # --- FILA TOTAL FINAL ---
+            ultima_fila_datos = f_act - 1
+            ws.Cells(f_act, 4).Value = "TOTAL"
+            ws.Cells(f_act, 5).Formula = f'=SUBTOTAL(9, E2:E{ultima_fila_datos})'
+            ws.Range(ws.Cells(f_act, 4), ws.Cells(f_act, 5)).Interior.Color = 0xCCFFCC
+            ws.Range(ws.Cells(f_act, 4), ws.Cells(f_act, 5)).Font.Bold = True
             ws.Cells(f_act, 5).NumberFormat = "$ #,##0.00"
-            f_act += 1
-            
-        ws.Cells(f_act, 4).Value = "TOTAL"
-        ws.Cells(f_act, 5).Formula = f'=SUBTOTAL(9, E2:E{f_act-1})'
-        ws.Range(ws.Cells(f_act, 4), ws.Cells(f_act, 5)).Interior.Color = 0xCCFFCC
-        ws.Columns.AutoFit()
-        wb.Save(); wb.Close(); excel.Quit(); pythoncom.CoUninitialize()
+
+            ws.Columns.AutoFit()
+
+            rango_datos = ws.Range(ws.Cells(1, 1), ws.Cells(f_act, 7))
+            rango_datos.Borders.LineStyle = 1  # xlContinuous
+            rango_datos.Borders.Weight = 2    # xlMedium
+
+            for fila in filas_blanco:
+                ws.Range(ws.Cells(fila, 1), ws.Cells(fila, 7)).Borders.LineStyle = -4132
+
+            # =========================================================
+            # TABLA RESUMEN GLOBAL / UNIFIED / AEO  —  Columna J (col 10)
+            # =========================================================
+            COL_LABEL = 10   # J
+            COL_VALOR = 11   # K
+            FILA_INI  = 2
+
+            rango_criterio = f'B2:B{ultima_fila_datos}'
+            rango_suma     = f'E2:E{ultima_fila_datos}'
+
+            def formula_sumif(marcas):
+                partes = [f'SUMIF({rango_criterio},"{m}",{rango_suma})' for m in marcas]
+                return '=' + '+'.join(partes)
+
+            # Datos de cada fila: (etiqueta, fórmula, color_fondo_hex_bgr)
+            filas_resumen = [
+                ("Global",   formula_sumif(self.marcas_global),                       0xEED7BD),  # Azul claro (BGR)
+                ("Unified",  formula_sumif([m for m in self.marcas_unifed if m != 'AEO']), 0x99E6FF),  # Naranja claro (BGR)
+                ("AEO",      f'=SUMIF({rango_criterio},"AEO",{rango_suma})',           0xCCFFCC),  # Verde claro (BGR)
+            ]
+
+            for i, (etiqueta, formula, color) in enumerate(filas_resumen):
+                fila = FILA_INI + i
+                # Etiqueta
+                c_label = ws.Cells(fila, COL_LABEL)
+                c_label.Value = etiqueta
+                c_label.Interior.Color = color
+                c_label.Font.Bold = True
+                # Valor
+                c_valor = ws.Cells(fila, COL_VALOR)
+                c_valor.Formula = formula
+                c_valor.Interior.Color = color
+                c_valor.NumberFormat = "$ #,##0.00"
+
+            # Gran Total resumen
+            fila_total_resumen = FILA_INI + len(filas_resumen)
+            c_gt_label = ws.Cells(fila_total_resumen, COL_LABEL)
+            c_gt_label.Value = "Total"
+            c_gt_label.Font.Bold = True
+
+            c_gt_valor = ws.Cells(fila_total_resumen, COL_VALOR)
+            c_gt_valor.Formula = f'=SUM(K{FILA_INI}:K{fila_total_resumen - 1})'
+            c_gt_valor.Font.Bold = True
+            c_gt_valor.NumberFormat = "$ #,##0.00"
+            # Borde superior para separar del resto
+            c_gt_valor.Borders(8).LineStyle = 1   # xlEdgeTop
+            c_gt_valor.Borders(8).Weight    = 3   # xlMedium
+            c_gt_label.Borders(8).LineStyle = 1
+            c_gt_label.Borders(8).Weight    = 3
+
+            # Bordes al bloque completo J2:K(total)
+            rango_tabla = ws.Range(
+                ws.Cells(FILA_INI, COL_LABEL),
+                ws.Cells(fila_total_resumen, COL_VALOR)
+            )
+            rango_tabla.Borders.LineStyle = 1   # xlContinuous
+            rango_tabla.Borders.Weight    = 2   # xlThin
+
+            # Autoajustar columnas J y K
+            ws.Columns(COL_LABEL).AutoFit()
+            ws.Columns(COL_VALOR).AutoFit()
+
+            self.log("Tabla resumen Global/Unified/AEO escrita en columna J", "OK")
+            # =========================================================
+
+            wb.Save()
+            self.log("Proyección guardada exitosamente", "OK")
+
+        except Exception as e:
+            self.log(f"Error al guardar proyección: {str(e)}", "ERROR")
+            raise
+        finally:
+            if wb: wb.Close()
+            if excel: excel.Quit()
+            pythoncom.CoUninitialize()
 
     def ejecutar_proceso(self):
         self.set_progress(10, "Iniciando...")
@@ -372,12 +481,16 @@ class ProcesadorSemanal:
             carpeta = self.crear_estructura_carpetas(self.fecha_filtrado)
             ruta = carpeta / self.crear_nombre_archivo(self.fecha_filtrado)
             self.copiar_archivo_base(ruta)
+            self.set_progress(40, "Leyendo datos...")
             df = self.leer_datos_proceso_semanal(ruta)
+            self.set_progress(55, "Filtrando registros...")
             df_f = self.filtrar_por_fecha(df, self.fecha_filtrado)
+            self.set_progress(70, "Preparando proyección...")
             df_s = self.preparar_datos_segunda_hoja(df_f)
             df_a = self.agrupar_y_calcular(df_s)
+            self.set_progress(85, "Guardando archivo...")
             self.guardar_proyeccion_com(ruta, df_a, self.crear_nombre_segunda_hoja(self.fecha_filtrado))
-            # Omitiendo anexar a archivo final por brevedad, pero la lógica de UI está lista.
+            self.set_progress(100, "Completado")
             return True
         except Exception as e:
             raise e
