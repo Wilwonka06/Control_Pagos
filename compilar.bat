@@ -12,22 +12,22 @@ echo ==========================================
 echo.
 
 REM Verificar archivos principales
-if not exist "inicio_control.py" (
-    echo ERROR: No se encuentra inicio_control.py
+if not exist "main.py" (
+    echo ERROR: No se encuentra main.py
     echo.
     pause
     exit /b 1
 )
 
-if not exist "proceso_semanal.py" (
-    echo ERROR: No se encuentra proceso_semanal.py
+if not exist "scripts\proceso_semanal.py" (
+    echo ERROR: No se encuentra scripts\proceso_semanal.py
     echo.
     pause
     exit /b 1
 )
 
-if not exist "proceso_mensual.py" (
-    echo ERROR: No se encuentra proceso_mensual.py
+if not exist "scripts\proceso_mensual.py" (
+    echo ERROR: No se encuentra scripts\proceso_mensual.py
     echo.
     pause
     exit /b 1
@@ -82,13 +82,13 @@ set "DEPLOY_PATH=O:\Finanzas\Info Bancos\Pagos Internacionales\PROYECCION PAGOS 
 REM Compilar - Archivo principal que importa los módulos
 pyinstaller --onedir %modo% ^
     --icon=icon.ico ^
-    --name="Control de Pagos GCO" ^
+    --name="Proyecciones RPA" ^
     --distpath "%DEPLOY_PATH%" ^
     --add-data "icon.ico;." ^
-    --add-data "proceso_semanal.py;." ^
-    --add-data "proceso_mensual.py;." ^
-    --hidden-import=proceso_semanal ^
-    --hidden-import=proceso_mensual ^
+    --add-data "scripts\proceso_semanal.py;scripts" ^
+    --add-data "scripts\proceso_mensual.py;scripts" ^
+    --hidden-import=scripts.proceso_semanal ^
+    --hidden-import=scripts.proceso_mensual ^
     --hidden-import=win32com ^
     --hidden-import=win32com.client ^
     --hidden-import=win32com.client.gencache ^
@@ -109,7 +109,7 @@ pyinstaller --onedir %modo% ^
     --hidden-import=babel.numbers ^
     --collect-all win32com ^
     --collect-all tkcalendar ^
-    inicio_control.py
+    main.py
 
 if errorlevel 1 (
     echo.
@@ -128,7 +128,7 @@ echo Ejecutable creado en:
 echo   %cd%\dist\Control de Pagos GCO.exe
 echo.
 echo ESTRUCTURA MODULAR:
-echo   inicio_control.py  (Interfaz + Coordinacion)
+echo   main.py  (Interfaz + Coordinacion)
 echo   proceso_semanal.py          (Logica semanal)
 echo   proceso_mensual.py          (Logica mensual)
 echo.

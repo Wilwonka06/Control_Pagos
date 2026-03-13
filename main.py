@@ -452,8 +452,8 @@ class WeeklyView(BaseView):
         super().__init__(parent, controller)
         self.create_header("Proyección Semanal", "Seleccione la fecha de filtrado para el reporte semanal", "📅")
         
-        import proceso_semanal
-        self.view_impl = proceso_semanal.WeeklyFrame(self, self.controller)
+        import scripts.proceso_semanal
+        self.view_impl = scripts.proceso_semanal.WeeklyFrame(self, self.controller)
         self.view_impl.pack(fill=tk.BOTH, expand=True)
 
 
@@ -462,8 +462,8 @@ class MonthlyView(BaseView):
         super().__init__(parent, controller)
         self.create_header("Proyección Mensual", "Seleccione el mes y año para el reporte mensual", "📊")
         
-        import proceso_mensual
-        self.view_impl = proceso_mensual.MonthlyFrame(self, self.controller)
+        import scripts.proceso_mensual
+        self.view_impl = scripts.proceso_mensual.MonthlyFrame(self, self.controller)
         self.view_impl.pack(fill=tk.BOTH, expand=True)
 
 
